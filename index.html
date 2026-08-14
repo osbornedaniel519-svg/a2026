@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>2026 — Soccer</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== MAIN MENU ===================== -->
+  <div id="menu" class="screen">
+    <div class="menuInner">
+      <h1 class="logo"><span class="logoNum">20</span><span class="logoNum accent">26</span></h1>
+      <p class="tagline">an original arcade soccer game</p>
+
+      <div class="menuSection">
+        <h2>Your Team</h2>
+        <div id="homePicker" class="teamGrid"></div>
+      </div>
+
+      <div class="menuSection">
+        <h2>Opponent</h2>
+        <div id="awayPicker" class="teamGrid"></div>
+      </div>
+
+      <div class="menuRow">
+        <div class="menuSection half">
+          <h2>Difficulty</h2>
+          <div id="diffPicker" class="pillGroup"></div>
+        </div>
+        <div class="menuSection half">
+          <h2>Half Length</h2>
+          <div id="lenPicker" class="pillGroup"></div>
+        </div>
+      </div>
+
+      <button id="kickoffBtn" class="bigBtn">Kick Off</button>
+      <button id="howToBtn" class="linkBtn">How to play</button>
+    </div>
+  </div>
+
+  <!-- ===================== HOW TO PLAY ===================== -->
+  <div id="howto" class="screen hidden">
+    <div class="menuInner">
+      <h2>How to Play</h2>
+      <div class="howtoGrid">
+        <div>
+          <h3>Keyboard</h3>
+          <ul>
+            <li><b>WASD / Arrows</b> — move</li>
+            <li><b>Shift</b> — sprint</li>
+            <li><b>Z</b> — pass</li>
+            <li><b>X</b> — through ball / lob</li>
+            <li><b>C (hold)</b> — shoot (release to strike, hold longer = more power)</li>
+            <li><b>Space</b> — tackle / slide when defending</li>
+            <li><b>Q</b> — switch player</li>
+            <li><b>Esc</b> — pause</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Touch</h3>
+          <ul>
+            <li>Left stick — move</li>
+            <li><b>SPR</b> — sprint</li>
+            <li><b>PASS</b> — ground pass</li>
+            <li><b>THRU</b> — through ball / lob</li>
+            <li><b>SHOT</b> (hold &amp; release) — shoot</li>
+          </ul>
+        </div>
+      </div>
+      <p class="hint">You always control the outfield player nearest the ball. Goalkeepers are automatic.</p>
+      <button class="bigBtn" id="closeHowto">Back</button>
+    </div>
+  </div>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <div id="gameScreen" class="screen hidden">
+    <div id="hudTop">
+      <div class="hudTeam" id="hudHome">
+        <span class="hudBadge" id="hudHomeBadge"></span>
+        <span class="hudName" id="hudHomeName">HOME</span>
+      </div>
+      <div class="hudCenter">
+        <span id="hudScore">0 - 0</span>
+        <span id="hudClock">00:00</span>
+      </div>
+      <div class="hudTeam right" id="hudAway">
+        <span class="hudName" id="hudAwayName">AWAY</span>
+        <span class="hudBadge" id="hudAwayBadge"></span>
+      </div>
+      <button id="pauseBtn" class="iconBtn">❙❙</button>
+    </div>
+
+    <div id="pitchWrap">
+      <canvas id="pitchCanvas"></canvas>
+      <canvas id="miniMap"></canvas>
+      <div id="banner" class="hidden"></div>
+    </div>
+
+    <!-- Touch controls -->
+    <div id="touchControls">
+      <div id="joyBase" class="joyBase">
+        <div id="joyStick" class="joyStick"></div>
+      </div>
+      <div id="actionButtons">
+        <button id="btnThrough" class="actionBtn small">THRU</button>
+        <button id="btnPass" class="actionBtn">PASS</button>
+        <button id="btnShoot" class="actionBtn big">SHOT</button>
+        <button id="btnSprint" class="actionBtn small sprint">SPR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAUSE OVERLAY ===================== -->
+  <div id="pauseOverlay" class="screen hidden">
+    <div class="menuInner narrow">
+      <h2>Paused</h2>
+      <button id="resumeBtn" class="bigBtn">Resume</button>
+      <button id="quitBtn" class="linkBtn">Quit to Menu</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/constants.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/input.js"></script>
+<script src="js/match.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
