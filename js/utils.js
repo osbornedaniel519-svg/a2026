@@ -36,6 +36,15 @@ function mulberry32(seed) {
   };
 }
 
+// ---- Minimal 3D vector helpers, used only for the perspective camera projection. ----
+function v3sub(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
+function v3cross(a, b) { return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x }; }
+function v3dot(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+function v3norm(a) {
+  const len = Math.hypot(a.x, a.y, a.z) || 1;
+  return { x: a.x / len, y: a.y / len, z: a.z / len };
+}
+
 function angleDiff(a, b) {
   let d = (b - a) % (Math.PI * 2);
   if (d > Math.PI) d -= Math.PI * 2;

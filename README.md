@@ -1,8 +1,11 @@
 # 2026
 
 A realistic arcade soccer game for the browser, pushed as far as a single canvas and vanilla
-JavaScript will take it. No build step, no dependencies, no external assets — every visual is
-drawn on `<canvas>` and every sound is synthesized with the Web Audio API.
+JavaScript will take it. Rendered in true perspective 3D — a hand-rolled camera (no WebGL or
+engine) projects the pitch, players and ball through a look-at/FOV camera that follows the ball
+like a broadcast camera, giving real depth, scale-with-distance and occlusion. No build step, no
+dependencies, no external assets — every visual is drawn on `<canvas>` and every sound is
+synthesized with the Web Audio API.
 
 Originally-designed teams only: generic national-style kits (colors + codes, themed around the
 2026 World Cup hosts and a few other footballing nations), original procedurally-named rosters,
@@ -57,9 +60,11 @@ automatically as play moves. Goalkeepers are always AI-controlled.
 - `js/match.js` — the match state machine: kickoff, goals, throw-ins, corners, goal kicks (or
   wall bounces in Outside mode), halftime, full time, and human pass/shoot/tackle actions with
   light aim-assist
-- `js/render.js` — pitch markings for both grass stadium and walled concrete court, camera that
-  follows the ball, aspect-ratio-adaptive viewport (fills the screen on any device with no
-  letterboxing), and a minimap
+- `js/render.js` — a small hand-rolled 3D camera (look-at + perspective projection, no
+  WebGL/engine) that follows the ball like a broadcast camera; the pitch, goals and players
+  (billboarded kit/shorts/legs sprites, depth-sorted) are projected through it for both the grass
+  stadium and the walled concrete court, plus a stadium backdrop, aspect-ratio-adaptive viewport
+  (fills the screen on any device with no letterboxing), and a 2D top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 
