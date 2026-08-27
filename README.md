@@ -20,6 +20,14 @@ python3 -m http.server 8080
 
 then visit `http://localhost:8080`.
 
+## Game modes
+
+Pick one under "Where to Play" in the menu:
+- **Stadium · 11v11** — the full pitch, 4-3-3 formations, throw-ins/corners/goal-kicks.
+- **Outside · 4v4** — a small walled cage/court pickup game (1 keeper + 3 outfield each). The
+  ball bounces off the boards instead of going out, so there's no stoppage besides kickoffs and
+  goals — quick, chaotic, arcade street football against NPCs.
+
 ## Controls
 
 **Keyboard**
@@ -46,10 +54,12 @@ automatically as play moves. Goalkeepers are always AI-controlled.
 - `js/ai.js` — 4-3-3 formation shape that breathes with the ball, pressing/marking on defense,
   and a decision loop (shoot / pass / dribble / clear) for every AI-controlled player, including
   a reactive diving goalkeeper
-- `js/match.js` — the match state machine: kickoff, goals, throw-ins, corners, goal kicks,
-  halftime, full time, and human pass/shoot/tackle actions with light aim-assist
-- `js/render.js` — pitch markings, camera that follows the ball, aspect-ratio-adaptive viewport
-  (fills the screen on any device with no letterboxing), and a minimap
+- `js/match.js` — the match state machine: kickoff, goals, throw-ins, corners, goal kicks (or
+  wall bounces in Outside mode), halftime, full time, and human pass/shoot/tackle actions with
+  light aim-assist
+- `js/render.js` — pitch markings for both grass stadium and walled concrete court, camera that
+  follows the ball, aspect-ratio-adaptive viewport (fills the screen on any device with no
+  letterboxing), and a minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 

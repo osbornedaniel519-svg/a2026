@@ -1,6 +1,8 @@
 // ===================== World / field constants =====================
 // All spatial units are arbitrary "world units" (~ 1 unit ≈ 10cm) tuned for feel, not strict scale.
-const FIELD = {
+// Two pitch presets exist (full Stadium, small-sided walled Outside/street); FIELD is a single
+// mutable object so every other module can keep reading `FIELD.x` live instead of caching a copy.
+const STADIUM_FIELD = {
   length: 1400,        // x-axis (goal to goal)
   width: 900,           // y-axis (touchline to touchline)
   margin: 60,            // run-off space drawn outside the lines
@@ -16,6 +18,23 @@ const FIELD = {
   penSpotDist: 165,
   cornerR: 14,
 };
+
+// A small walled cage/court: ball bounces off the boards instead of going out, so there are
+// no throw-ins, corners or goal-kicks — just kickoffs and goals, like a pickup game outside.
+const STREET_FIELD = {
+  length: 520,
+  width: 340,
+  margin: 26,
+  goalWidth: 88,
+  goalDepth: 22,
+  crossbarHeight: 80,
+};
+
+const FIELD = Object.assign({}, STADIUM_FIELD);
+
+function applyFieldMode(mode) {
+  Object.assign(FIELD, mode === 'street' ? STREET_FIELD : STADIUM_FIELD);
+}
 
 const PHYS = {
   gravity: 1500,
@@ -79,6 +98,19 @@ const FORMATION_433 = [
   { role: 'FWD', fx: 0.78, fy: 0.50 },
   { role: 'FWD', fx: 0.74, fy: 0.80 },
 ];
+
+// Outside/street mode: 4-a-side (1 GK + 3 outfield) loose triangle on a small walled court.
+const FORMATION_STREET = [
+  { role: 'GK', fx: 0.06, fy: 0.50 },
+  { role: 'DEF', fx: 0.32, fy: 0.26 },
+  { role: 'MID', fx: 0.56, fy: 0.74 },
+  { role: 'FWD', fx: 0.80, fy: 0.42 },
+];
+
+const GAME_MODES = {
+  stadium: { label: 'Stadium', formation: FORMATION_433, walled: false, cameraZoom: 600, ambientCrowd: true },
+  street: { label: 'Outside', formation: FORMATION_STREET, walled: true, cameraZoom: 400, ambientCrowd: false },
+};
 
 const FIRST_NAMES = ['Alex','Marco','Leo','Diego','Sam','Kai','Theo','Noah','Luca','Omar','Ben','Josh','Enzo','Yuto','Mateo','Ryo','Tariq','Nico','Owen','Iker','Hugo','Milo','Zane','Rico'];
 const LAST_NAMES = ['Silva','Novak','Reyes','Kessler','Hartmann','Bianchi','Okafor','Suzuki','Moreno','Whitfield','Dubois','Larsen','Petrov','Nakamura','Alvarez','Sato','Kimura','Costa','Fischer','Delgado','Aguilar','Voss','Reyes','Park'];

@@ -14,6 +14,7 @@ class Renderer {
     this.dpr = 1;
     this.viewW = 1000;
     this.viewH = 640;
+    this.zoomUnits = UNIT_PER_MIN_DIM;
     this.hud = {
       score: document.getElementById('hudScore'),
       clock: document.getElementById('hudClock'),
@@ -31,8 +32,8 @@ class Renderer {
     const cw = this.wrap.clientWidth || 800;
     const ch = this.wrap.clientHeight || 500;
     const ratio = cw / ch;
-    if (ratio >= 1) { this.viewH = UNIT_PER_MIN_DIM; this.viewW = UNIT_PER_MIN_DIM * ratio; }
-    else { this.viewW = UNIT_PER_MIN_DIM; this.viewH = UNIT_PER_MIN_DIM / ratio; }
+    if (ratio >= 1) { this.viewH = this.zoomUnits; this.viewW = this.zoomUnits * ratio; }
+    else { this.viewW = this.zoomUnits; this.viewH = this.zoomUnits / ratio; }
 
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
@@ -45,6 +46,11 @@ class Renderer {
     const mh = this.miniCanvas.clientHeight || 96;
     this.miniCanvas.width = Math.round(mw * dpr);
     this.miniCanvas.height = Math.round(mh * dpr);
+  }
+
+  resetCamera() {
+    this.camera.x = FIELD.length / 2;
+    this.camera.y = FIELD.width / 2;
   }
 
   updateCamera(match, dt) {
@@ -67,63 +73,101 @@ class Renderer {
     return { scale, ox, oy };
   }
 
-  drawPitch(ctx) {
+  drawPitch(ctx, walled) {
     const m = FIELD.margin;
-    ctx.fillStyle = '#164a24';
-    ctx.fillRect(-m, -m, FIELD.length + m * 2, FIELD.width + m * 2);
 
-    const stripeW = 70;
-    let toggle = 0;
-    for (let x = -m; x < FIELD.length + m; x += stripeW) {
-      ctx.fillStyle = toggle % 2 === 0 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.035)';
-      ctx.fillRect(x, -m, stripeW, FIELD.width + m * 2);
-      toggle++;
+    if (walled) {
+      // Concrete court + chain-link boarding, no stadium markings — just goals and a halfway line.
+      ctx.fillStyle = '#3b4249';
+      ctx.fillRect(-m, -m, FIELD.length + m * 2, FIELD.width + m * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      for (let x = -m; x < FIELD.length + m; x += 26) {
+        ctx.fillRect(x, -m, 1.5, FIELD.width + m * 2);
+      }
+
+      ctx.fillStyle = '#20262b';
+      ctx.fillRect(-m, -m, FIELD.length + m * 2, m - 4);
+      ctx.fillRect(-m, FIELD.width - m + 4, FIELD.length + m * 2, m);
+      ctx.fillRect(-m, -m, m - 4, FIELD.width + m * 2);
+      ctx.fillRect(FIELD.length - m + 4, -m, m, FIELD.width + m * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      const mesh = 9;
+      for (let x = -m; x < FIELD.length + m; x += mesh) {
+        ctx.beginPath(); ctx.moveTo(x, -m); ctx.lineTo(x + mesh, -m + mesh); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, FIELD.width + m); ctx.lineTo(x + mesh, FIELD.width + m - mesh); ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(0, 0, FIELD.length, FIELD.width);
+      ctx.beginPath();
+      ctx.moveTo(FIELD.length / 2, 0); ctx.lineTo(FIELD.length / 2, FIELD.width);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(FIELD.length / 2, FIELD.width / 2, FIELD.centerCircleR, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#164a24';
+      ctx.fillRect(-m, -m, FIELD.length + m * 2, FIELD.width + m * 2);
+
+      const stripeW = 70;
+      let toggle = 0;
+      for (let x = -m; x < FIELD.length + m; x += stripeW) {
+        ctx.fillStyle = toggle % 2 === 0 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.035)';
+        ctx.fillRect(x, -m, stripeW, FIELD.width + m * 2);
+        toggle++;
+      }
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+      ctx.lineWidth = 3.4;
+      ctx.strokeRect(0, 0, FIELD.length, FIELD.width);
+
+      ctx.beginPath();
+      ctx.moveTo(FIELD.length / 2, 0);
+      ctx.lineTo(FIELD.length / 2, FIELD.width);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(FIELD.length / 2, FIELD.width / 2, FIELD.centerCircleR, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-    ctx.lineWidth = 3.4;
-    ctx.strokeRect(0, 0, FIELD.length, FIELD.width);
-
-    ctx.beginPath();
-    ctx.moveTo(FIELD.length / 2, 0);
-    ctx.lineTo(FIELD.length / 2, FIELD.width);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(FIELD.length / 2, FIELD.width / 2, FIELD.centerCircleR, 0, Math.PI * 2);
-    ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.beginPath(); ctx.arc(FIELD.length / 2, FIELD.width / 2, 3.4, 0, Math.PI * 2); ctx.fill();
 
     const midY = FIELD.width / 2;
-    // Penalty boxes, goal boxes, arcs, spots (left then right)
     for (const side of [0, 1]) {
       const baseX = side === 0 ? 0 : FIELD.length;
-      const penX = side === 0 ? 0 : FIELD.length - FIELD.penaltyDepth;
-      ctx.strokeRect(penX, midY - FIELD.penaltyWidth / 2, FIELD.penaltyDepth, FIELD.penaltyWidth);
-      const gbX = side === 0 ? 0 : FIELD.length - FIELD.goalBoxDepth;
-      ctx.strokeRect(gbX, midY - FIELD.goalBoxWidth / 2, FIELD.goalBoxDepth, FIELD.goalBoxWidth);
 
-      const spotX = side === 0 ? FIELD.penSpotDist : FIELD.length - FIELD.penSpotDist;
-      ctx.beginPath(); ctx.arc(spotX, midY, 3.2, 0, Math.PI * 2); ctx.fill();
+      if (!walled) {
+        // Penalty boxes, goal boxes, arcs, spots (stadium only)
+        const penX = side === 0 ? 0 : FIELD.length - FIELD.penaltyDepth;
+        ctx.strokeRect(penX, midY - FIELD.penaltyWidth / 2, FIELD.penaltyDepth, FIELD.penaltyWidth);
+        const gbX = side === 0 ? 0 : FIELD.length - FIELD.goalBoxDepth;
+        ctx.strokeRect(gbX, midY - FIELD.goalBoxWidth / 2, FIELD.goalBoxDepth, FIELD.goalBoxWidth);
 
-      ctx.beginPath();
-      const startA = side === 0 ? -0.93 : Math.PI - 0.93;
-      const endA = side === 0 ? 0.93 : Math.PI + 0.93;
-      ctx.arc(spotX, midY, FIELD.centerCircleR, startA, endA);
-      ctx.stroke();
+        const spotX = side === 0 ? FIELD.penSpotDist : FIELD.length - FIELD.penSpotDist;
+        ctx.beginPath(); ctx.arc(spotX, midY, 3.2, 0, Math.PI * 2); ctx.fill();
 
-      // corner arcs (quarter circles swept into the field of play)
-      for (const cy of [0, FIELD.width]) {
-        const top = cy === 0;
-        const a0 = side === 0 ? (top ? 0 : -Math.PI / 2) : (top ? Math.PI / 2 : Math.PI);
-        const a1 = a0 + Math.PI / 2;
         ctx.beginPath();
-        ctx.arc(baseX, cy, FIELD.cornerR, a0, a1);
+        const startA = side === 0 ? -0.93 : Math.PI - 0.93;
+        const endA = side === 0 ? 0.93 : Math.PI + 0.93;
+        ctx.arc(spotX, midY, FIELD.centerCircleR, startA, endA);
         ctx.stroke();
+
+        // corner arcs (quarter circles swept into the field of play)
+        for (const cy of [0, FIELD.width]) {
+          const top = cy === 0;
+          const a0 = side === 0 ? (top ? 0 : -Math.PI / 2) : (top ? Math.PI / 2 : Math.PI);
+          const a1 = a0 + Math.PI / 2;
+          ctx.beginPath();
+          ctx.arc(baseX, cy, FIELD.cornerR, a0, a1);
+          ctx.stroke();
+        }
       }
 
-      // Goal frame + net
+      // Goal frame + net (both modes)
       const gx0 = side === 0 ? -FIELD.goalDepth : FIELD.length;
       const gx1 = side === 0 ? 0 : FIELD.length + FIELD.goalDepth;
       const gy0 = midY - FIELD.goalWidth / 2, gy1 = midY + FIELD.goalWidth / 2;
@@ -141,8 +185,8 @@ class Renderer {
       for (let nx = Math.min(gx0, gx1); nx <= Math.max(gx0, gx1); nx += netStep) {
         ctx.beginPath(); ctx.moveTo(nx, gy0); ctx.lineTo(nx, gy1); ctx.stroke();
       }
-      ctx.lineWidth = 3.4;
-      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+      ctx.lineWidth = walled ? 3 : 3.4;
+      ctx.strokeStyle = walled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.92)';
     }
   }
 
@@ -229,6 +273,10 @@ class Renderer {
   }
 
   draw(match, dt) {
+    if (match.cameraZoom && this.zoomUnits !== match.cameraZoom) {
+      this.zoomUnits = match.cameraZoom;
+      this.resize();
+    }
     this.updateCamera(match, dt);
     const ctx = this.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -236,7 +284,7 @@ class Renderer {
     const { scale, ox, oy } = this.worldTransform();
     ctx.setTransform(scale, 0, 0, scale, ox, oy);
 
-    this.drawPitch(ctx);
+    this.drawPitch(ctx, match.walled);
 
     const behind = [];
     const front = [];

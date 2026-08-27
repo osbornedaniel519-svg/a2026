@@ -144,11 +144,12 @@ function kickBall(ball, player, dirAngle, power, liftFactor) {
   player.kickCooldown = 0.28;
 }
 
-function makeSquad(team, teamDef, seed) {
+function makeSquad(team, teamDef, seed, formation) {
+  formation = formation || FORMATION_433;
   const rng = mulberry32(seed);
   const players = [];
-  for (let i = 0; i < FORMATION_433.length; i++) {
-    const slot = FORMATION_433[i];
+  for (let i = 0; i < formation.length; i++) {
+    const slot = formation[i];
     const fn = FIRST_NAMES[Math.floor(rng() * FIRST_NAMES.length)];
     const ln = LAST_NAMES[Math.floor(rng() * LAST_NAMES.length)];
     const worldX = team === 'home' ? slot.fx * FIELD.length : (1 - slot.fx) * FIELD.length;

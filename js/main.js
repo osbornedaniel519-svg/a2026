@@ -1,6 +1,6 @@
 // ===================== Bootstrap: menu wiring + game loop =====================
 (function () {
-  const sel = { homeIdx: 0, awayIdx: 1, diff: 'Normal', len: 'Normal' };
+  const sel = { homeIdx: 0, awayIdx: 1, diff: 'Normal', len: 'Normal', mode: 'stadium' };
 
   const screens = {
     menu: document.getElementById('menu'),
@@ -57,6 +57,11 @@
   renderTeamPicker('awayPicker', false);
   refreshPickers();
 
+  renderPillGroup('modePicker', [
+    { key: 'stadium', label: 'Stadium · 11v11' },
+    { key: 'street', label: 'Outside · 4v4' },
+  ], () => sel.mode, (k) => { sel.mode = k; });
+
   renderPillGroup('diffPicker', [
     { key: 'Easy', label: 'Easy' },
     { key: 'Normal', label: 'Normal' },
@@ -102,10 +107,10 @@
 
   function startMatch() {
     SFX.resume();
-    SFX.startAmbientCrowd();
     const homeDef = TEAMS[sel.homeIdx];
     const awayDef = TEAMS[sel.awayIdx];
-    match = new Match(homeDef, awayDef, sel.diff, sel.len);
+    match = new Match(homeDef, awayDef, sel.diff, sel.len, sel.mode);
+    if (match.ambientCrowd) SFX.startAmbientCrowd();
 
     screens.menu.classList.add('hidden');
     screens.howto.classList.add('hidden');
@@ -120,7 +125,9 @@
         document.getElementById('pitchWrap')
       );
     }
+    renderer.zoomUnits = match.cameraZoom;
     renderer.resize();
+    renderer.resetCamera();
 
     if (!running) { running = true; lastTime = null; requestAnimationFrame(loop); }
     window.DEBUG_GAME = { get match() { return match; }, get renderer() { return renderer; } };

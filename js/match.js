@@ -7,11 +7,19 @@ function hashCode(str) {
 }
 
 class Match {
-  constructor(homeDef, awayDef, diffKey, halfLenKey) {
+  constructor(homeDef, awayDef, diffKey, halfLenKey, modeKey) {
     this.homeDef = homeDef;
     this.awayDef = awayDef;
-    this.home = makeSquad('home', homeDef, hashCode(homeDef.code) + 11);
-    this.away = makeSquad('away', awayDef, hashCode(awayDef.code) + 97);
+    this.mode = GAME_MODES[modeKey] ? modeKey : 'stadium';
+    const modeDef = GAME_MODES[this.mode];
+    applyFieldMode(this.mode);
+
+    this.walled = modeDef.walled;
+    this.cameraZoom = modeDef.cameraZoom;
+    this.ambientCrowd = modeDef.ambientCrowd;
+
+    this.home = makeSquad('home', homeDef, hashCode(homeDef.code) + 11, modeDef.formation);
+    this.away = makeSquad('away', awayDef, hashCode(awayDef.code) + 97, modeDef.formation);
     this.ball = new Ball(FIELD.length / 2, FIELD.width / 2);
 
     this.diffKey = diffKey;
@@ -22,7 +30,8 @@ class Match {
     this.score = { home: 0, away: 0 };
     this.half = 1;
     this.clockReal = 0;
-    this.worldBounds = { minX: -30, maxX: FIELD.length + 30, minY: -30, maxY: FIELD.width + 30 };
+    const wbMargin = this.walled ? 14 : 30;
+    this.worldBounds = { minX: -wbMargin, maxX: FIELD.length + wbMargin, minY: -wbMargin, maxY: FIELD.width + wbMargin };
     this.manualLockTimer = 0;
     this.firstHalfKickoffTeam = Math.random() < 0.5 ? 'home' : 'away';
     this.controlled = this.home.find(p => p.role !== 'GK');
@@ -252,6 +261,22 @@ class Match {
     }
   }
 
+  bounceBallX() {
+    const ball = this.ball;
+    ball.x = clamp(ball.x, 3, FIELD.length - 3);
+    ball.vx = -ball.vx * 0.58;
+    ball.vy *= 0.9;
+    if (SFX) SFX.post();
+  }
+
+  bounceBallY() {
+    const ball = this.ball;
+    ball.y = clamp(ball.y, 3, FIELD.width - 3);
+    ball.vy = -ball.vy * 0.58;
+    ball.vx *= 0.9;
+    if (SFX) SFX.post();
+  }
+
   checkOutOfBounds() {
     const ball = this.ball;
     const inGoalMouthY = Math.abs(ball.y - FIELD.width / 2) < FIELD.goalWidth / 2;
@@ -262,6 +287,7 @@ class Match {
         return;
       }
       if (ball.owner) return;
+      if (this.walled) { this.bounceBallX(); return; }
       const defendingTeam = ball.x <= 0 ? 'home' : 'away';
       const lastTeam = ball.lastTouchTeam;
       if (lastTeam === defendingTeam) {
@@ -277,6 +303,7 @@ class Match {
 
     if (ball.y <= 0 || ball.y >= FIELD.width) {
       if (ball.owner) return;
+      if (this.walled) { this.bounceBallY(); return; }
       const lastTeam = ball.lastTouchTeam;
       const restartTeam = lastTeam === 'home' ? 'away' : 'home';
       this.setRestart('throwin', restartTeam, clamp(ball.x, 24, FIELD.length - 24), ball.y <= 0 ? 4 : FIELD.width - 4);
