@@ -67,6 +67,11 @@ const HALF_LENGTHS = {
   Long:   300,
 };
 
+// Fictional pitchside sponsor boards (Stadium mode only) — original made-up brand names, not real
+// companies, same policy as the team kits.
+const AD_BOARDS = ['ATLAS BANK', 'NOVA AIR', 'ORBIT TELECOM', 'VERTEX SPORT', '2026 CUP', 'SOLAR ENERGY', 'PRIME COLA', 'GLOBAL FC'];
+const AD_BOARD_COLORS = ['#1c3fae', '#c81c3a', '#0f8a4c', '#e0a90c', '#7a1cc8', '#0c8ac8'];
+
 // Generic, original national-style squads themed around the 2026 World Cup hosts + a few others.
 // No real crests, kits or player likenesses are used — colors and codes only.
 const TEAMS = [

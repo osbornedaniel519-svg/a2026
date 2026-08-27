@@ -63,6 +63,7 @@ class Renderer {
     this.fovY = 0.80;    // vertical field of view, radians
     this.focal = 500;
     this.cam = null;
+    this.ballTrail = [];
     this.hud = {
       score: document.getElementById('hudScore'),
       clock: document.getElementById('hudClock'),
@@ -133,7 +134,10 @@ class Renderer {
   project(px, ph, pz) {
     const cam = this.cam;
     const rel = { x: px - cam.pos.x, y: ph - cam.pos.y, z: pz - cam.pos.z };
-    const cx = v3dot(rel, cam.right);
+    // cam.right points toward world -X (an artifact of the cross-product order used to derive
+    // it from `forward`); negate here so increasing world X moves rightward on screen, matching
+    // the minimap/HUD convention, without touching the (already-correct) vertical basis.
+    const cx = -v3dot(rel, cam.right);
     const cy = v3dot(rel, cam.up);
     const cz = v3dot(rel, cam.forward);
     const zc = cz > 5 ? cz : 5;
@@ -183,10 +187,31 @@ class Renderer {
     const farR = this.project(FIELD.length, 0, FIELD.width + FIELD.margin);
     const horizonY = Math.min(Math.max(farL.sy, 0), Math.max(farR.sy, 0), h * 0.46);
 
-    const bandH = h * 0.14;
+    const bandH = h * 0.16;
     const bandTop = Math.max(0, horizonY - bandH);
-    ctx.fillStyle = walled ? '#12171c' : '#111a15';
-    ctx.fillRect(0, bandTop, w, Math.max(0, horizonY - bandTop + 2));
+
+    // Upper (distant, darker) tier
+    const upperH = (horizonY - bandTop) * 0.35;
+    ctx.fillStyle = walled ? '#0d1114' : '#0c130f';
+    ctx.fillRect(0, bandTop, w, upperH);
+
+    // Lower tier, closer to the pitch
+    const lowerTop = bandTop + upperH;
+    ctx.fillStyle = walled ? '#171c21' : '#152a1c';
+    ctx.fillRect(0, lowerTop, w, Math.max(0, horizonY - lowerTop + 2));
+
+    if (!walled) {
+      // Blocks of fans in different section colors, stable per-frame (no per-frame randomness)
+      const patchColors = ['#2c3f6b', '#6b2c3f', '#2c6b4a', '#6b5a2c', '#3f2c6b', '#2c5a6b'];
+      const blockW = 44;
+      ctx.globalAlpha = 0.55;
+      for (let x = 0, bi = 0; x < w; x += blockW, bi++) {
+        const hash = Math.abs(Math.sin(bi * 12.9898)) * 43758.5453;
+        ctx.fillStyle = patchColors[Math.floor(hash) % patchColors.length];
+        ctx.fillRect(x, lowerTop, blockW - 2, horizonY - lowerTop);
+      }
+      ctx.globalAlpha = 1;
+    }
 
     ctx.fillStyle = walled ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.09)';
     for (let y = bandTop + 3; y < horizonY; y += 5) {
@@ -247,6 +272,91 @@ class Renderer {
         segLine(ctx, this.project(gx, 0, gy), this.project(gx, wallH, gy));
       }
     }
+  }
+
+  drawAdBoards(ctx) {
+    const m = FIELD.margin;
+    const boardH = 22;
+    const inset = m * 0.32;
+    const segs = [
+      [-inset, -inset, FIELD.length + inset, -inset],
+      [-inset, FIELD.width + inset, FIELD.length + inset, FIELD.width + inset],
+      [-inset, -inset, -inset, FIELD.width + inset],
+      [FIELD.length + inset, -inset, FIELD.length + inset, FIELD.width + inset],
+    ];
+    const panelLen = 130;
+    let colorIdx = 0, nameIdx = 0;
+    for (const [x0, y0, x1, y1] of segs) {
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      const count = Math.max(1, Math.round(len / panelLen));
+      for (let i = 0; i < count; i++) {
+        const t0 = i / count, t1 = (i + 1) / count;
+        const ax = lerp(x0, x1, t0), ay = lerp(y0, y1, t0);
+        const bx = lerp(x0, x1, t1), by = lerp(y0, y1, t1);
+        const g0 = this.project(ax, 0, ay), g1 = this.project(bx, 0, by);
+        if (!g0.visible && !g1.visible) { colorIdx++; nameIdx++; continue; }
+        const t0top = this.project(ax, boardH, ay), t1top = this.project(bx, boardH, by);
+        ctx.fillStyle = AD_BOARD_COLORS[colorIdx % AD_BOARD_COLORS.length];
+        fillQuad(ctx, g0, g1, t1top, t0top);
+
+        const panelPxLen = Math.hypot(g1.sx - g0.sx, g1.sy - g0.sy);
+        const midTopX = (t0top.sx + t1top.sx) / 2, midTopY = (t0top.sy + t1top.sy) / 2;
+        const midBotX = (g0.sx + g1.sx) / 2, midBotY = (g0.sy + g1.sy) / 2;
+        const panelPxH = Math.hypot(midTopX - midBotX, midTopY - midBotY);
+        if (panelPxLen > 24 && panelPxH > 4) {
+          const angle = Math.atan2(g1.sy - g0.sy, g1.sx - g0.sx);
+          ctx.save();
+          ctx.translate((midTopX + midBotX) / 2, (midTopY + midBotY) / 2);
+          ctx.rotate(angle);
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx.font = `700 ${Math.max(5, panelPxH * 0.55)}px Segoe UI, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(AD_BOARDS[nameIdx % AD_BOARDS.length], 0, 0);
+          ctx.restore();
+        }
+        colorIdx++; nameIdx++;
+      }
+    }
+  }
+
+  drawPitchWear(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    const spots = [
+      [FIELD.length / 2, FIELD.width / 2, FIELD.centerCircleR * 0.5],
+      [FIELD.penSpotDist, FIELD.width / 2, 60],
+      [FIELD.length - FIELD.penSpotDist, FIELD.width / 2, 60],
+      [FIELD.goalBoxDepth * 0.5, FIELD.width / 2, 34],
+      [FIELD.length - FIELD.goalBoxDepth * 0.5, FIELD.width / 2, 34],
+    ];
+    for (const [cx, cz, r] of spots) {
+      const pts = this.projectCircle(cx, cz, r, 0, Math.PI * 2, 20);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].sx, pts[0].sy);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].sx, pts[i].sy);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  drawFloodlightGlow(ctx) {
+    const focus = this.project(this.camera.x, 0, this.camera.y);
+    const w = this.canvas.width, h = this.canvas.height;
+    const r = Math.max(w, h) * 0.7;
+    const glow = ctx.createRadialGradient(focus.sx, focus.sy * 0.7, r * 0.05, focus.sx, focus.sy * 0.7, r);
+    glow.addColorStop(0, 'rgba(255, 250, 230, 0.10)');
+    glow.addColorStop(1, 'rgba(255, 250, 230, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  drawVignette(ctx) {
+    const w = this.canvas.width, h = this.canvas.height;
+    const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.32)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
   }
 
   drawLines(ctx, walled) {
@@ -419,6 +529,18 @@ class Renderer {
   drawBall3D(ctx, ball) {
     const ground = this.project(ball.x, 0, ball.y);
     if (!ground.visible) return;
+
+    const trail = this.ballTrail;
+    for (let i = 0; i < trail.length; i++) {
+      const tp = this.project(trail[i].x, trail[i].z, trail[i].y);
+      if (!tp.visible) continue;
+      const frac = (i + 1) / (trail.length + 1);
+      ctx.fillStyle = `rgba(244,246,242,${frac * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(tp.sx, tp.sy, Math.max(1, PHYS.ballRadius * tp.scale * (0.5 + 0.4 * frac)), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     const pos = this.project(ball.x, ball.z, ball.y);
     const shadowScale = clamp(1 - ball.z / 260, 0.3, 1);
 
@@ -460,9 +582,19 @@ class Renderer {
 
     this.drawSky(ctx, match.walled);
     this.drawGround(ctx, match.walled);
+    if (!match.walled) this.drawPitchWear(ctx);
+    this.drawFloodlightGlow(ctx);
     this.drawLines(ctx, match.walled);
     this.drawGoal3D(ctx, 0);
     this.drawGoal3D(ctx, 1);
+    if (!match.walled) this.drawAdBoards(ctx);
+
+    if (match.ball.speed() > 260) {
+      this.ballTrail.push({ x: match.ball.x, y: match.ball.y, z: match.ball.z });
+      if (this.ballTrail.length > 5) this.ballTrail.shift();
+    } else if (this.ballTrail.length) {
+      this.ballTrail.shift();
+    }
 
     const drawables = [];
     for (const p of match.home) drawables.push({ p, def: match.homeDef, cz: this.project(p.x, 0, p.y).cz });
@@ -483,6 +615,8 @@ class Renderer {
       const pts = this.projectCircle(p.x, p.y, 24 + t * 12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(t + 0.08, 0, 1), 24);
       strokePolyline(ctx, pts);
     }
+
+    this.drawVignette(ctx);
 
     this.drawMinimap(match);
     this.updateHUD(match);
