@@ -31,6 +31,26 @@ function fillQuad(ctx, a, b, c, d) {
   ctx.fill();
 }
 
+function taperedTorsoPath(ctx, cx, topY, h, topW, botW, r) {
+  const x0t = cx - topW / 2, x1t = cx + topW / 2;
+  const x0b = cx - botW / 2, x1b = cx + botW / 2;
+  const botY = topY + h;
+  r = Math.max(0, Math.min(r, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x0t + r, topY);
+  ctx.lineTo(x1t - r, topY);
+  ctx.quadraticCurveTo(x1t, topY, x1t, topY + r);
+  ctx.lineTo(x1b, botY - r);
+  ctx.quadraticCurveTo(x1b, botY, x1b - r, botY);
+  ctx.lineTo(x0b + r, botY);
+  ctx.quadraticCurveTo(x0b, botY, x0b, botY - r);
+  ctx.lineTo(x0t, topY + r);
+  ctx.quadraticCurveTo(x0t, topY, x0t + r, topY);
+  ctx.closePath();
+}
+
+const HAIR_COLORS = ['#241a12', '#3a2416', '#0f0d0b', '#5c3a1e', '#1c1c1c'];
+
 function roundRectPath(ctx, x, y, w, h, r) {
   r = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
@@ -170,7 +190,7 @@ class Renderer {
     ctx.stroke();
   }
 
-  drawSky(ctx, walled) {
+  drawSky(ctx, walled, celebrating) {
     const w = this.canvas.width, h = this.canvas.height;
     const grad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
     if (walled) {
@@ -213,10 +233,34 @@ class Renderer {
       ctx.globalAlpha = 1;
     }
 
-    ctx.fillStyle = walled ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.09)';
-    for (let y = bandTop + 3; y < horizonY; y += 5) {
-      const rowShift = ((y * 13) % 9);
-      for (let x = -10 + rowShift; x < w; x += 9) ctx.fillRect(x, y, 3, 3);
+    if (walled) {
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      for (let y = bandTop + 3; y < horizonY; y += 5) {
+        const rowShift = ((y * 13) % 9);
+        for (let x = -10 + rowShift; x < w; x += 9) ctx.fillRect(x, y, 3, 3);
+      }
+    } else {
+      // Individual fans (tiny head + body), rippling in a traveling wave that livens up
+      // into a bigger cheer while a goal is being celebrated.
+      const t = performance.now() / 1000;
+      const amp = celebrating ? 3.4 : 1.1;
+      const speed = celebrating ? 8 : 2.1;
+      const rowH = 6, colStep = 8;
+      let ri = 0;
+      for (let y = bandTop + 3; y < horizonY; y += rowH, ri++) {
+        const rowShift = (ri % 2) * (colStep / 2);
+        let fi = 0;
+        for (let x = rowShift; x < w; x += colStep, fi++) {
+          const hash = Math.abs(Math.sin((fi * 7 + ri * 13.1) * 12.9898)) % 1;
+          const bob = Math.sin(t * speed - x * 0.045 + hash * 6.28) * amp;
+          const bright = 0.45 + hash * 0.4;
+          ctx.fillStyle = `rgba(255,236,220,${(walled ? 0.05 : 0.16) * bright})`;
+          ctx.beginPath();
+          ctx.arc(x, y + bob, 1.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(x - 1.1, y + bob + 1.3, 2.2, 2.5);
+        }
+      }
     }
 
     if (!walled) {
@@ -434,6 +478,7 @@ class Renderer {
   }
 
   drawGoalkeeperDive(ctx, p, colorDef, ground, top, scale) {
+    const kit = { primary: '#1d2126', secondary: colorDef.primary, text: '#ffffff' };
     const dur = p.diveDuration || 0.4;
     const elapsed = clamp(1 - p.diveTimer / dur, 0, 1);
     const rot = Math.min(1, elapsed / 0.3) * 1.3; // fast snap into a stretched pose, then hold
@@ -457,19 +502,19 @@ class Renderer {
     roundRectPath(ctx, bodyW * 0.15, -H * 0.24, bodyW * 0.4, H * 0.24, bodyW * 0.18);
     ctx.fill();
 
-    ctx.fillStyle = colorDef.secondary;
+    ctx.fillStyle = kit.secondary;
     roundRectPath(ctx, -bodyW * 0.5, -H * 0.42, bodyW, H * 0.2, bodyW * 0.25);
     ctx.fill();
 
-    ctx.fillStyle = colorDef.primary;
-    ctx.strokeStyle = colorDef.secondary;
+    ctx.fillStyle = kit.primary;
+    ctx.strokeStyle = kit.secondary;
     ctx.lineWidth = Math.max(0.6, 1.3 * scale);
     roundRectPath(ctx, -bodyW * 0.5, -H * 0.72, bodyW, H * 0.3, bodyW * 0.3);
     ctx.fill();
     ctx.stroke();
 
     // reaching arm, extended past the head, with a glove
-    ctx.strokeStyle = colorDef.primary;
+    ctx.strokeStyle = kit.primary;
     ctx.lineWidth = Math.max(1.5, bodyW * 0.34);
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -486,7 +531,7 @@ class Renderer {
     ctx.arc(0, -H * 0.86, headR, 0, Math.PI * 2);
     ctx.fillStyle = '#e3b590';
     ctx.fill();
-    ctx.strokeStyle = colorDef.secondary;
+    ctx.strokeStyle = kit.secondary;
     ctx.lineWidth = Math.max(0.6, 1.1 * scale);
     ctx.stroke();
 
@@ -522,38 +567,42 @@ class Renderer {
     ctx.lineWidth = Math.max(1, 2 * scale);
     segLine(ctx, ground, faceEnd);
 
+    // Goalkeepers wear a distinct kit (dark shirt, team-colored trim) and gloves, like real keepers.
+    const kit = p.role === 'GK' ? { primary: '#1d2126', secondary: colorDef.primary, text: '#ffffff' } : colorDef;
+    const handColor = p.role === 'GK' ? '#ffe14d' : '#e3b590';
+
     const bodyW = Math.max(2, 14 * scale);
-    const headR = bodyW * 0.58;
+    const shoulderW = bodyW * 1.22;
+    const headR = bodyW * 0.56;
     const bodyTopY = top.sy;
     const bodyBotY = ground.sy;
-    const headCenterY = bodyTopY + headR * 0.95;
-    const torsoTopY = headCenterY + headR * 0.75;
+    const headCenterY = bodyTopY + headR * 1.0;
+    const torsoTopY = headCenterY + headR * 0.82;
     const torsoH = Math.max(2, bodyBotY - torsoTopY);
 
-    const shirtH = torsoH * 0.48;
+    const shirtH = torsoH * 0.46;
     const shortsH = torsoH * 0.20;
     const legsY0 = torsoTopY + shirtH + shortsH;
     const legsH = Math.max(1, bodyBotY - legsY0);
     const legW = bodyW * 0.24;
     const legOffset = bodyW * 0.19;
-
-    // legs (skin) with small dark boots at the feet. The right leg swings through a kick
-    // animation right after this player strikes the ball (see kickBall() in entities.js).
     const bootH = Math.max(1, legsH * 0.22);
+
+    // Kicking-leg swing (see kickBall() in entities.js) overrides the idle running-cycle swing
+    // that plays continuously while the player is moving, for a bit of life even off the ball.
     const kickT = p.kickAnimTimer > 0 ? clamp(1 - p.kickAnimTimer / PHYS.kickAnimDuration, 0, 1) : 0;
     const kickSwing = kickT > 0 ? Math.sin(kickT * Math.PI) * 0.95 : 0;
+    const moveLen = Math.hypot(p.vx, p.vy);
+    const runSwing = moveLen > 25 ? Math.sin(p.runPhase) * clamp(moveLen / 260, 0.25, 1) * 0.55 : 0;
+    const legSwingR = kickSwing !== 0 ? -kickSwing : runSwing;
+    const legSwingL = kickSwing !== 0 ? 0 : -runSwing;
+    const armSwingR = kickSwing !== 0 ? kickSwing * 0.5 : -runSwing * 0.8;
+    const armSwingL = kickSwing !== 0 ? -kickSwing * 0.3 : runSwing * 0.8;
 
-    ctx.fillStyle = '#e3b590';
-    roundRectPath(ctx, ground.sx - legOffset - legW / 2, legsY0, legW, legsH, legW * 0.3);
-    ctx.fill();
-    ctx.fillStyle = '#20201f';
-    roundRectPath(ctx, ground.sx - legOffset - legW / 2, bodyBotY - bootH, legW, bootH, legW * 0.3);
-    ctx.fill();
-
-    if (kickSwing !== 0) {
+    const drawLeg = (offsetX, swing) => {
       ctx.save();
-      ctx.translate(ground.sx + legOffset, legsY0);
-      ctx.rotate(-kickSwing);
+      ctx.translate(ground.sx + offsetX, legsY0);
+      if (swing) ctx.rotate(-swing);
       ctx.fillStyle = '#e3b590';
       roundRectPath(ctx, -legW / 2, 0, legW, legsH, legW * 0.3);
       ctx.fill();
@@ -561,42 +610,69 @@ class Renderer {
       roundRectPath(ctx, -legW / 2, legsH - bootH, legW, bootH, legW * 0.3);
       ctx.fill();
       ctx.restore();
-    } else {
-      ctx.fillStyle = '#e3b590';
-      roundRectPath(ctx, ground.sx + legOffset - legW / 2, legsY0, legW, legsH, legW * 0.3);
-      ctx.fill();
-      ctx.fillStyle = '#20201f';
-      roundRectPath(ctx, ground.sx + legOffset - legW / 2, bodyBotY - bootH, legW, bootH, legW * 0.3);
-      ctx.fill();
-    }
+    };
+    drawLeg(-legOffset, legSwingL);
+    drawLeg(legOffset, legSwingR);
 
     // shorts
-    ctx.fillStyle = colorDef.secondary;
+    ctx.fillStyle = kit.secondary;
     roundRectPath(ctx, ground.sx - bodyW / 2, torsoTopY + shirtH, bodyW, shortsH + 1, bodyW * 0.22);
     ctx.fill();
 
-    // shirt
-    ctx.fillStyle = colorDef.primary;
-    ctx.strokeStyle = colorDef.secondary;
+    // arms (sleeves), drawn from the shoulder down to a small skin/glove hand near hip level
+    const armW = bodyW * 0.24;
+    const armLen = shirtH * 0.86 + shortsH * 0.35;
+    const shoulderY = torsoTopY + shirtH * 0.08;
+    const drawArm = (offsetX, swing) => {
+      ctx.save();
+      ctx.translate(ground.sx + offsetX, shoulderY);
+      ctx.rotate(swing * 0.6);
+      ctx.fillStyle = kit.primary;
+      ctx.strokeStyle = kit.secondary;
+      ctx.lineWidth = Math.max(0.5, scale);
+      roundRectPath(ctx, -armW / 2, 0, armW, armLen, armW * 0.35);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = handColor;
+      ctx.beginPath();
+      ctx.arc(0, armLen + armW * 0.32, armW * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+    drawArm(-shoulderW / 2 + armW * 0.2, armSwingL);
+    drawArm(shoulderW / 2 - armW * 0.2, armSwingR);
+
+    // shirt: tapered (shoulders wider than waist) with a light-to-dark vertical shade
+    const shirtGrad = ctx.createLinearGradient(0, torsoTopY, 0, torsoTopY + shirtH);
+    shirtGrad.addColorStop(0, shadeColor(kit.primary, 14));
+    shirtGrad.addColorStop(1, shadeColor(kit.primary, -12));
+    ctx.fillStyle = shirtGrad;
+    ctx.strokeStyle = kit.secondary;
     ctx.lineWidth = Math.max(0.6, 1.4 * scale);
-    roundRectPath(ctx, ground.sx - bodyW / 2, torsoTopY, bodyW, shirtH + 2, bodyW * 0.3);
+    taperedTorsoPath(ctx, ground.sx, torsoTopY, shirtH + 2, shoulderW, bodyW * 0.86, bodyW * 0.28);
     ctx.fill();
     ctx.stroke();
 
+    // head + simple hair cap
     ctx.beginPath();
-    ctx.arc(ground.sx, headCenterY, headR, 0, Math.PI * 2);
+    ctx.ellipse(ground.sx, headCenterY, headR * 0.92, headR, 0, 0, Math.PI * 2);
     ctx.fillStyle = '#e3b590';
     ctx.fill();
-    ctx.strokeStyle = colorDef.secondary;
-    ctx.lineWidth = Math.max(0.6, 1.2 * scale);
+    ctx.strokeStyle = shadeColor('#e3b590', -18);
+    ctx.lineWidth = Math.max(0.5, scale * 0.6);
     ctx.stroke();
 
+    ctx.fillStyle = HAIR_COLORS[p.number % HAIR_COLORS.length];
+    ctx.beginPath();
+    ctx.ellipse(ground.sx, headCenterY - headR * 0.32, headR * 0.94, headR * 0.62, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+
     if (bodyW > 8) {
-      ctx.fillStyle = colorDef.text;
-      ctx.font = `700 ${Math.max(6, bodyW * 0.62)}px Segoe UI, sans-serif`;
+      ctx.fillStyle = kit.text;
+      ctx.font = `700 ${Math.max(6, bodyW * 0.6)}px Segoe UI, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(String(p.number), ground.sx, torsoTopY + torsoH * 0.42);
+      ctx.fillText(String(p.number), ground.sx, torsoTopY + shirtH * 0.56);
     }
 
     if (isControlled) {
@@ -665,7 +741,7 @@ class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.drawSky(ctx, match.walled);
+    this.drawSky(ctx, match.walled, match.state === 'GOAL');
     this.drawGround(ctx, match.walled);
     if (!match.walled) this.drawPitchWear(ctx);
     this.drawFloodlightGlow(ctx);

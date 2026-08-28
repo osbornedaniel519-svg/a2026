@@ -56,10 +56,12 @@ const PHYS = {
   kickAnimDuration: 0.32, // seconds the kicking-leg swing animation plays for
 };
 
+// reaction = base decision latency in seconds (lower = sharper); cpuSpeedMul scales the CPU
+// (away) team's speed directly, since the human never controls that side.
 const DIFFICULTY = {
-  Easy:   { cpuSpeedMul: 0.90, reaction: 0.34, tackleSkill: 0.42, shootSkill: 0.55, passSkill: 0.62 },
-  Normal: { cpuSpeedMul: 0.98, reaction: 0.22, tackleSkill: 0.55, shootSkill: 0.68, passSkill: 0.75 },
-  Hard:   { cpuSpeedMul: 1.06, reaction: 0.12, tackleSkill: 0.68, shootSkill: 0.80, passSkill: 0.86 },
+  Easy:   { cpuSpeedMul: 0.94, reaction: 0.30, tackleSkill: 0.48, shootSkill: 0.60, passSkill: 0.68 },
+  Normal: { cpuSpeedMul: 1.02, reaction: 0.17, tackleSkill: 0.63, shootSkill: 0.75, passSkill: 0.83 },
+  Hard:   { cpuSpeedMul: 1.10, reaction: 0.08, tackleSkill: 0.76, shootSkill: 0.88, passSkill: 0.93 },
 };
 
 const HALF_LENGTHS = {

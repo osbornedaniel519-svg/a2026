@@ -36,6 +36,16 @@ function mulberry32(seed) {
   };
 }
 
+// Lightens (positive percent) or darkens (negative) a "#rrggbb" color, for simple shirt shading.
+function shadeColor(hex, percent) {
+  const n = parseInt(hex.slice(1), 16);
+  const amt = Math.round(2.55 * percent);
+  const r = clamp((n >> 16) + amt, 0, 255);
+  const g = clamp((n >> 8 & 0xff) + amt, 0, 255);
+  const b = clamp((n & 0xff) + amt, 0, 255);
+  return `rgb(${r},${g},${b})`;
+}
+
 // ---- Minimal 3D vector helpers, used only for the perspective camera projection. ----
 function v3sub(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
 function v3cross(a, b) { return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x }; }

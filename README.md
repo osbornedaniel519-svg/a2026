@@ -54,19 +54,22 @@ automatically as play moves. Goalkeepers are always AI-controlled.
 - `js/constants.js` — field/physics/difficulty tuning and team data
 - `js/entities.js` — `Player` and `Ball`, with an owner-follow dribble model and a real
   gravity/bounce/friction simulation for the ball (height included, so shots can clear the bar)
-- `js/ai.js` — 4-3-3 formation shape that breathes with the ball, pressing/marking on defense,
-  and a decision loop (shoot / pass / dribble / clear) for every AI-controlled player, including
-  a reactive diving goalkeeper
+- `js/ai.js` — 4-3-3 formation shape that breathes with the ball, double-team pressing near goal
+  on Normal/Hard, and a decision loop (shoot / pass / dribble / clear) for every AI-controlled
+  player, including a reactive diving goalkeeper. Difficulty scales CPU speed, reaction latency,
+  tackling, passing and shot accuracy — Hard is a genuinely tough, fast-reacting opponent
 - `js/match.js` — the match state machine: kickoff, goals, throw-ins, corners, goal kicks (or
   wall bounces in Outside mode), halftime, full time, and human pass/shoot/tackle actions with
   light aim-assist
 - `js/render.js` — a small hand-rolled 3D camera (look-at + perspective projection, no
-  WebGL/engine) that follows the ball like a broadcast camera; the pitch, goals and players
-  (billboarded kit/shorts/legs sprites, depth-sorted) are projected through it for both the grass
-  stadium and the walled concrete court. Players play a leg-swing kick animation whenever they
-  strike the ball, and goalkeepers snap into a stretched, arm-reaching dive pose for saves.
-  Stadium mode adds perimeter sponsor boards (fictional brands), a tiered crowd with colored fan
-  sections, floodlight glow, pitch wear patches, a fast ball motion trail, and a vignette; plus an
+  WebGL/engine) that follows the ball like a broadcast camera; the pitch, goals and players are
+  projected through it for both the grass stadium and the walled concrete court. Players are
+  billboarded sprites with a tapered shirt, shorts, legs, arms, and hair, a running-cycle limb
+  swing while moving, and a distinct goalkeeper kit with gloves; they play a leg-swing kick
+  animation whenever they strike the ball, and goalkeepers snap into a stretched, arm-reaching
+  dive pose for saves. Stadium mode adds perimeter sponsor boards (fictional brands), a tiered
+  crowd of individual fans that ripple in a traveling wave (and cheer harder on goals),
+  floodlight glow, pitch wear patches, a fast ball motion trail, and a vignette; plus an
   aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and a 2D
   top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input

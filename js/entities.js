@@ -27,6 +27,7 @@ class Player {
     this.diveDuration = 0;
     this.diveDir = { x: 0, y: 0 };
     this.kickAnimTimer = 0;   // >0 while the kicking-leg swing animation is playing
+    this.runPhase = 0;       // running-cycle phase for the arm/leg swing while moving
     this.staminaFatigue = 1; // multiplier, drops slightly with prolonged sprinting
 
     // Simple ability spread so squads aren't perfectly uniform.
@@ -49,6 +50,7 @@ class Player {
       this.y += this.vy * dt;
       const moveLen = Math.hypot(this.vx, this.vy);
       if (moveLen > 8) this.facing = Math.atan2(this.vy, this.vx);
+      this.runPhase += moveLen * dt * 0.045;
     }
 
     if (worldBounds) {

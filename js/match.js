@@ -24,6 +24,12 @@ class Match {
 
     this.diffKey = diffKey;
     this.diff = DIFFICULTY[diffKey] || DIFFICULTY.Normal;
+    // The human never controls the away side, so difficulty scales its speed directly —
+    // the most direct lever for a tougher (or gentler) CPU opponent.
+    for (const p of this.away) {
+      p.baseSpeed *= this.diff.cpuSpeedMul;
+      p.sprintSpeed *= this.diff.cpuSpeedMul;
+    }
     this.halfLenKey = halfLenKey;
     this.halfLenSeconds = HALF_LENGTHS[halfLenKey] || HALF_LENGTHS.Normal;
 

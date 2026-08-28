@@ -11,6 +11,10 @@ function nearestTo(list, x, y) {
   return best;
 }
 
+function nearestN(list, x, y, n) {
+  return list.slice().sort((a, b) => dist2(a.x, a.y, x, y) - dist2(b.x, b.y, x, y)).slice(0, n);
+}
+
 function nearestDistTo(list, x, y) {
   let bestD = Infinity;
   for (const p of list) {
@@ -132,7 +136,8 @@ function updateCarrierAI(p, state, dt) {
   p.wantsSprint = nearestOppDist > 85;
 
   if (p.decisionTimer > 0 && nearestOppDist > 45) return;
-  p.decisionTimer = Math.max(0.15, rand(0.35, 0.65) - state.diff.reaction * 0.5);
+  // diff.reaction is a base reaction latency in seconds: lower = sharper/faster decisions.
+  p.decisionTimer = Math.max(0.08, state.diff.reaction + rand(0.04, 0.22));
 
   const distToGoal = dist(p.x, p.y, goalX, goalY);
   const central = Math.abs(p.y - FIELD.width / 2) < 290;
@@ -159,7 +164,9 @@ function updateCarrierAI(p, state, dt) {
     if (best) doPass(p, state, best); else doClear(p, state, goalX, goalY);
     return;
   }
-  if (best && (bestScore > 30 || underPressure)) {
+  // Sharper passers commit to a good pass more readily instead of over-dribbling into trouble.
+  const passThreshold = 42 - state.diff.passSkill * 20;
+  if (best && (bestScore > passThreshold || underPressure)) {
     doPass(p, state, best);
   } else if (underPressure) {
     doClear(p, state, goalX, goalY);
@@ -213,13 +220,17 @@ function updateGoalkeeper(gk, state, dt) {
   if (ball.owner === gk) updateCarrierAI(gk, state, dt);
 }
 
-function updateOnePlayer(p, state, possessionTeam, isPresser, dt) {
+function updateOnePlayer(p, state, possessionTeam, pressRank, dt) {
   if (p.role === 'GK') { updateGoalkeeper(p, state, dt); return; }
 
   if (state.ball.owner === p) { updateCarrierAI(p, state, dt); return; }
 
   const defending = possessionTeam && possessionTeam !== p.team;
-  if (defending && isPresser && state.ball.owner) {
+  // The second-nearest defender joins the press (a double-team) once the ball is in range and
+  // the difficulty calls for tighter defending — sharper opponents don't let a carrier settle.
+  const engageSecondary = pressRank === 1 && state.diff.tackleSkill > 0.5
+    && dist(p.x, p.y, state.ball.x, state.ball.y) < 260;
+  if (defending && state.ball.owner && (pressRank === 0 || engageSecondary)) {
     steerTo(p, state.ball.owner.x, state.ball.owner.y, 4, true);
     attemptPassiveTackle(p, state.ball.owner, state, dt);
   } else {
@@ -235,14 +246,14 @@ function runTeamAI(state, dt) {
   const homeOutfield = home.filter(p => p.role !== 'GK' && p !== controlled);
   const awayOutfield = away.filter(p => p.role !== 'GK');
 
-  const homePresser = nearestTo(homeOutfield, ball.x, ball.y);
-  const awayPresser = nearestTo(awayOutfield, ball.x, ball.y);
+  const homePressers = nearestN(homeOutfield, ball.x, ball.y, 2);
+  const awayPressers = nearestN(awayOutfield, ball.x, ball.y, 2);
 
   for (const p of home) {
     if (p === controlled) continue;
-    updateOnePlayer(p, state, possessionTeam, p === homePresser, dt);
+    updateOnePlayer(p, state, possessionTeam, homePressers.indexOf(p), dt);
   }
   for (const p of away) {
-    updateOnePlayer(p, state, possessionTeam, p === awayPresser, dt);
+    updateOnePlayer(p, state, possessionTeam, awayPressers.indexOf(p), dt);
   }
 }
