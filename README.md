@@ -58,26 +58,33 @@ automatically as play moves. Goalkeepers are always AI-controlled.
   on Normal/Hard, and a decision loop (shoot / pass / dribble / clear) for every AI-controlled
   player, including a reactive diving goalkeeper. Difficulty scales CPU speed, reaction latency,
   tackling, passing and shot accuracy — Hard is a genuinely tough, fast-reacting opponent
-- `js/match.js` — the match state machine: kickoff, goals, throw-ins, corners, goal kicks (or
-  wall bounces in Outside mode), halftime, full time, and human pass/shoot/tackle actions with
-  light aim-assist
+- `js/match.js` — the match state machine: kickoff, goals, halftime, full time, and human
+  pass/shoot/tackle actions with light aim-assist. Throw-ins, corners and goal kicks are real set
+  pieces, not instant hand-offs: a throw-in taker holds the ball overhead through the restart
+  pause and then actually throws it (both hands, arced) to the nearest teammate; corners are
+  delivered as a real crossed kick into the box; goal kicks are punted upfield. Because these just
+  put a normal moving ball back into play, the existing goal check (any shot/cross/throw that
+  crosses the line under the bar scores) applies to them exactly as it does in open play
 - `js/render.js` — a small hand-rolled 3D camera (look-at + perspective projection, no
   WebGL/engine) that follows the ball like a broadcast camera; the pitch, goals and players are
   projected through it for both the grass stadium and the walled concrete court. Players are
-  billboarded sprites with a tapered shirt, shorts, legs, arms, and hair, a running-cycle limb
-  swing while moving, and a distinct goalkeeper kit with gloves; they play a leg-swing kick
-  animation whenever they strike the ball, and goalkeepers snap into a stretched, arm-reaching
-  dive pose for saves. Stadium mode adds perimeter sponsor boards (fictional brands), a tiered
-  crowd of individual fans that ripple in a traveling wave (and cheer harder on goals),
-  floodlight glow, pitch wear patches, a fast ball motion trail, and a vignette; plus an
-  aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and a 2D
-  top-down minimap
+  billboarded sprites with a tapered shirt, shorts, legs, arms, hair, and a simple face (eyes +
+  mouth, up close), a running-cycle limb swing while moving, and a distinct goalkeeper kit with
+  gloves; they play a leg-swing kick animation whenever they strike the ball (including at
+  corners and goal kicks), raise both arms overhead for a throw-in, and goalkeepers snap into a
+  stretched, arm-reaching dive pose for saves. Stadium mode adds perimeter sponsor boards
+  (fictional brands), a tall three-tier stand packed with individual fans that ripple in a
+  traveling wave (and cheer harder on goals), floodlight glow, pitch wear patches, a fast ball
+  motion trail, and a vignette; plus an aspect-ratio-adaptive viewport (fills the screen on any
+  device with no letterboxing) and a 2D top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 
 ## Known simplifications
 
 This is a from-scratch arcade implementation, not a licensed simulation. To keep scope sane it
-skips: offside, fouls/cards, and end-swapping at halftime; throw-ins/corners/goal-kicks are
-instant restarts rather than animated set pieces. Everything else — movement, dribbling, passing,
-shooting, tackling, goalkeeping, and full match flow — is fully playable.
+skips offside and fouls/cards/end-swapping at halftime, and — unlike the real laws of the game,
+which disallow scoring directly from a throw-in — any restart that ends up crossing the line
+under the bar counts as a goal here, same as a shot from open play. Everything else — movement,
+dribbling, passing, shooting, tackling, goalkeeping, throw-ins, corners, goal kicks, and full
+match flow — is fully playable.

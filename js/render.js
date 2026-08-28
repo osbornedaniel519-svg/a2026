@@ -205,30 +205,33 @@ class Renderer {
 
     const farL = this.project(0, 0, FIELD.width + FIELD.margin);
     const farR = this.project(FIELD.length, 0, FIELD.width + FIELD.margin);
-    const horizonY = Math.min(Math.max(farL.sy, 0), Math.max(farR.sy, 0), h * 0.46);
+    const horizonY = Math.min(Math.max(farL.sy, 0), Math.max(farR.sy, 0), h * 0.5);
 
-    const bandH = h * 0.16;
+    // A tall, three-tier stand so the stadium reads as packed rather than a thin strip.
+    const bandH = h * (walled ? 0.16 : 0.30);
     const bandTop = Math.max(0, horizonY - bandH);
+    const upperH = bandH * 0.26;
+    const midH = bandH * 0.32;
+    const upperBot = bandTop + upperH;
+    const midBot = upperBot + midH;
 
-    // Upper (distant, darker) tier
-    const upperH = (horizonY - bandTop) * 0.35;
-    ctx.fillStyle = walled ? '#0d1114' : '#0c130f';
+    ctx.fillStyle = walled ? '#0d1114' : '#0a120d';
     ctx.fillRect(0, bandTop, w, upperH);
-
-    // Lower tier, closer to the pitch
-    const lowerTop = bandTop + upperH;
-    ctx.fillStyle = walled ? '#171c21' : '#152a1c';
-    ctx.fillRect(0, lowerTop, w, Math.max(0, horizonY - lowerTop + 2));
+    ctx.fillStyle = walled ? '#141a1e' : '#101f16';
+    ctx.fillRect(0, upperBot, w, midH);
+    ctx.fillStyle = walled ? '#1b2227' : '#17301f';
+    ctx.fillRect(0, midBot, w, Math.max(0, horizonY - midBot + 2));
 
     if (!walled) {
-      // Blocks of fans in different section colors, stable per-frame (no per-frame randomness)
+      // Blocks of fans in different section colors, stable per-frame (no per-frame randomness),
+      // covering the two nearer tiers — the most distant tier reads as a plain dim crowd.
       const patchColors = ['#2c3f6b', '#6b2c3f', '#2c6b4a', '#6b5a2c', '#3f2c6b', '#2c5a6b'];
-      const blockW = 44;
-      ctx.globalAlpha = 0.55;
+      const blockW = 40;
+      ctx.globalAlpha = 0.6;
       for (let x = 0, bi = 0; x < w; x += blockW, bi++) {
         const hash = Math.abs(Math.sin(bi * 12.9898)) * 43758.5453;
         ctx.fillStyle = patchColors[Math.floor(hash) % patchColors.length];
-        ctx.fillRect(x, lowerTop, blockW - 2, horizonY - lowerTop);
+        ctx.fillRect(x, upperBot, blockW - 2, horizonY - upperBot);
       }
       ctx.globalAlpha = 1;
     }
@@ -240,21 +243,24 @@ class Renderer {
         for (let x = -10 + rowShift; x < w; x += 9) ctx.fillRect(x, y, 3, 3);
       }
     } else {
-      // Individual fans (tiny head + body), rippling in a traveling wave that livens up
-      // into a bigger cheer while a goal is being celebrated.
+      // Individual fans (tiny head + body), packed tighter in the nearer tiers, rippling in a
+      // traveling wave that livens up into a bigger cheer while a goal is being celebrated.
       const t = performance.now() / 1000;
       const amp = celebrating ? 3.4 : 1.1;
       const speed = celebrating ? 8 : 2.1;
-      const rowH = 6, colStep = 8;
+      const rowH = 5;
       let ri = 0;
       for (let y = bandTop + 3; y < horizonY; y += rowH, ri++) {
+        const nearness = y < upperBot ? 0 : (y < midBot ? 1 : 2);
+        const colStep = nearness === 0 ? 12 : (nearness === 1 ? 8 : 6);
+        const tierBright = 0.4 + nearness * 0.28;
         const rowShift = (ri % 2) * (colStep / 2);
         let fi = 0;
         for (let x = rowShift; x < w; x += colStep, fi++) {
           const hash = Math.abs(Math.sin((fi * 7 + ri * 13.1) * 12.9898)) % 1;
           const bob = Math.sin(t * speed - x * 0.045 + hash * 6.28) * amp;
-          const bright = 0.45 + hash * 0.4;
-          ctx.fillStyle = `rgba(255,236,220,${(walled ? 0.05 : 0.16) * bright})`;
+          const bright = (0.45 + hash * 0.4) * tierBright;
+          ctx.fillStyle = `rgba(255,236,220,${0.17 * bright})`;
           ctx.beginPath();
           ctx.arc(x, y + bob, 1.3, 0, Math.PI * 2);
           ctx.fill();
@@ -534,11 +540,27 @@ class Renderer {
     ctx.strokeStyle = kit.secondary;
     ctx.lineWidth = Math.max(0.6, 1.1 * scale);
     ctx.stroke();
+    this.drawFace(ctx, 0, -H * 0.86, headR);
 
     ctx.restore();
   }
 
-  drawPlayer3D(ctx, p, colorDef, isControlled) {
+  drawFace(ctx, cx, cy, headR) {
+    if (headR < 3) return; // too small to read — keep distant heads a clean blob
+    const eyeDX = headR * 0.34;
+    const eyeY = cy - headR * 0.04;
+    ctx.fillStyle = '#241a12';
+    ctx.beginPath(); ctx.arc(cx - eyeDX, eyeY, Math.max(0.4, headR * 0.12), 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + eyeDX, eyeY, Math.max(0.4, headR * 0.12), 0, Math.PI * 2); ctx.fill();
+    if (headR < 5) return; // skip the mouth at very small sizes, eyes alone read fine
+    ctx.strokeStyle = '#9a5a48';
+    ctx.lineWidth = Math.max(0.4, headR * 0.09);
+    ctx.beginPath();
+    ctx.arc(cx, cy + headR * 0.24, headR * 0.32, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+  }
+
+  drawPlayer3D(ctx, p, colorDef, isControlled, isThrowingIn) {
     const H = p.role === 'GK' ? GK_BILLBOARD_HEIGHT : BILLBOARD_HEIGHT;
     const ground = this.project(p.x, 0, p.y);
     if (!ground.visible) return;
@@ -623,24 +645,37 @@ class Renderer {
     const armW = bodyW * 0.24;
     const armLen = shirtH * 0.86 + shortsH * 0.35;
     const shoulderY = torsoTopY + shirtH * 0.08;
-    const drawArm = (offsetX, swing) => {
+    const drawArmSeg = (shoulderX, angle, len) => {
       ctx.save();
-      ctx.translate(ground.sx + offsetX, shoulderY);
-      ctx.rotate(swing * 0.6);
+      ctx.translate(shoulderX, shoulderY);
+      ctx.rotate(angle);
       ctx.fillStyle = kit.primary;
       ctx.strokeStyle = kit.secondary;
       ctx.lineWidth = Math.max(0.5, scale);
-      roundRectPath(ctx, -armW / 2, 0, armW, armLen, armW * 0.35);
+      roundRectPath(ctx, -armW / 2, 0, armW, len, armW * 0.35);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = handColor;
       ctx.beginPath();
-      ctx.arc(0, armLen + armW * 0.32, armW * 0.42, 0, Math.PI * 2);
+      ctx.arc(0, len + armW * 0.32, armW * 0.42, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     };
-    drawArm(-shoulderW / 2 + armW * 0.2, armSwingL);
-    drawArm(shoulderW / 2 - armW * 0.2, armSwingR);
+    const drawArm = (offsetX, swing) => drawArmSeg(ground.sx + offsetX, swing * 0.6, armLen);
+    if (isThrowingIn) {
+      // Both hands go up and together overhead for a throw-in, as the laws of the game require.
+      const targetX = ground.sx, targetY = bodyTopY - headR * 0.7;
+      const drawArmToOverhead = (offsetX) => {
+        const shoulderX = ground.sx + offsetX;
+        const dx = targetX - shoulderX, dy = targetY - shoulderY;
+        drawArmSeg(shoulderX, Math.atan2(-dx, dy), Math.hypot(dx, dy));
+      };
+      drawArmToOverhead(-shoulderW / 2 + armW * 0.2);
+      drawArmToOverhead(shoulderW / 2 - armW * 0.2);
+    } else {
+      drawArm(-shoulderW / 2 + armW * 0.2, armSwingL);
+      drawArm(shoulderW / 2 - armW * 0.2, armSwingR);
+    }
 
     // shirt: tapered (shoulders wider than waist) with a light-to-dark vertical shade
     const shirtGrad = ctx.createLinearGradient(0, torsoTopY, 0, torsoTopY + shirtH);
@@ -666,6 +701,8 @@ class Renderer {
     ctx.beginPath();
     ctx.ellipse(ground.sx, headCenterY - headR * 0.32, headR * 0.94, headR * 0.62, 0, Math.PI, Math.PI * 2);
     ctx.fill();
+
+    this.drawFace(ctx, ground.sx, headCenterY, headR);
 
     if (bodyW > 8) {
       ctx.fillStyle = kit.text;
@@ -757,6 +794,9 @@ class Renderer {
       this.ballTrail.shift();
     }
 
+    const throwTaker = (match.state === 'OUT' && match.restartType === 'throwin' && match.pendingRestart)
+      ? match.pendingRestart.taker : null;
+
     const drawables = [];
     for (const p of match.home) drawables.push({ p, def: match.homeDef, cz: this.project(p.x, 0, p.y).cz });
     for (const p of match.away) drawables.push({ p, def: match.awayDef, cz: this.project(p.x, 0, p.y).cz });
@@ -765,7 +805,7 @@ class Renderer {
     drawables.sort((a, b) => b.cz - a.cz);
     for (const d of drawables) {
       if (d.ball) this.drawBall3D(ctx, match.ball);
-      else this.drawPlayer3D(ctx, d.p, d.def, d.p === match.controlled);
+      else this.drawPlayer3D(ctx, d.p, d.def, d.p === match.controlled, d.p === throwTaker);
     }
 
     if (Input.shootCharging && match.ball.owner === match.controlled) {

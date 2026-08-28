@@ -94,7 +94,9 @@ class Match {
 
   setRestart(type, team, x, y) {
     const ball = this.ball;
-    ball.owner = null; ball.vx = 0; ball.vy = 0; ball.vz = 0; ball.z = 0;
+    ball.owner = null; ball.vx = 0; ball.vy = 0; ball.vz = 0;
+    // A throw-in is held overhead for the pause, ready to arc down into the throw itself.
+    ball.z = type === 'throwin' ? 50 : 0;
     ball.x = clamp(x, 6, FIELD.length - 6);
     ball.y = clamp(y, 6, FIELD.width - 6);
 
@@ -111,16 +113,45 @@ class Match {
     }
     this.pendingRestart = { type, team, taker };
     this.state = 'OUT';
-    this.stateTimer = 0.8;
+    this.stateTimer = type === 'throwin' ? 1.15 : 0.85;
     this.restartType = type;
     if (SFX) SFX.whistle(true);
+  }
+
+  // A throw must use both hands and go overhead, so the taker lobs it in toward the nearest
+  // open teammate rather than just handing over possession.
+  takeThrowIn(taker) {
+    const teammates = (taker.team === 'home' ? this.home : this.away).filter(t => t !== taker && t.role !== 'GK');
+    const target = nearestTo(teammates, taker.x, taker.y);
+    let angle = target ? Math.atan2(target.y - taker.y, target.x - taker.x) : (taker.team === 'home' ? 0 : Math.PI);
+    angle += taker.y <= FIELD.width / 2 ? 0.35 : -0.35; // aim back in from the touchline
+    kickBall(this.ball, taker, angle, rand(280, 380), 0.3);
+  }
+
+  // Corners are delivered as a real cross into the box, near or far post at random.
+  takeCorner(taker) {
+    const midY = FIELD.width / 2;
+    const targetX = taker.team === 'home' ? FIELD.length - FIELD.goalBoxDepth * 1.3 : FIELD.goalBoxDepth * 1.3;
+    const targetY = midY + (Math.random() < 0.5 ? -1 : 1) * FIELD.goalWidth * 0.6;
+    const d = dist(taker.x, taker.y, targetX, targetY);
+    const angle = Math.atan2(targetY - taker.y, targetX - taker.x);
+    kickBall(this.ball, taker, angle, clamp(d * 0.95 + 140, 420, 760), 0.42);
+  }
+
+  // The keeper punts a goal kick upfield rather than just picking up possession.
+  takeGoalKick(taker) {
+    const targetX = taker.team === 'home' ? FIELD.length * 0.62 : FIELD.length * 0.38;
+    const targetY = FIELD.width / 2 + rand(-220, 220);
+    const angle = Math.atan2(targetY - taker.y, targetX - taker.x);
+    kickBall(this.ball, taker, angle, rand(680, 860), 0.55);
   }
 
   resumeFromRestart() {
     const r = this.pendingRestart;
     if (r && r.taker) {
-      this.ball.owner = r.taker;
-      this.ball.x = r.taker.x; this.ball.y = r.taker.y;
+      if (r.type === 'throwin') this.takeThrowIn(r.taker);
+      else if (r.type === 'corner') this.takeCorner(r.taker);
+      else if (r.type === 'goalkick') this.takeGoalKick(r.taker);
     }
     this.pendingRestart = null;
     this.state = 'PLAYING';
