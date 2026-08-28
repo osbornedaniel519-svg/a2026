@@ -1,0 +1,399 @@
+:root {
+  --grass1: #2e8b3d;
+  --grass2: #2a7d38;
+  --line: rgba(255,255,255,0.92);
+  --ink: #0c1712;
+  --panel: #0f2016ee;
+  --panel2: #123321;
+  --gold: #ffcf4d;
+  --home-accent: #ffcf4d;
+  --danger: #ff5252;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #08120c;
+  color: #eafff0;
+  font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+.screen.hidden { display: none; }
+
+#menu, #howto, #pauseOverlay {
+  background: radial-gradient(ellipse at top, #163c22 0%, #081109 70%);
+  padding: 24px 12px;
+}
+
+.menuInner {
+  width: 100%;
+  max-width: 640px;
+  background: var(--panel);
+  border: 1px solid #1f4a2c;
+  border-radius: 18px;
+  padding: 22px 24px 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.menuInner.narrow { max-width: 360px; text-align: center; }
+
+.logo {
+  text-align: center;
+  font-size: 3.4rem;
+  margin: 4px 0 0;
+  letter-spacing: 2px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 0 rgba(0,0,0,0.35);
+}
+.logoNum.accent { color: var(--gold); }
+.tagline {
+  text-align: center;
+  margin: 2px 0 20px;
+  color: #9fd6ac;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.menuSection { margin-bottom: 16px; }
+.menuSection h2 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #8fcf9c;
+  margin: 0 0 8px;
+}
+.menuRow { display: flex; gap: 16px; }
+.half { flex: 1; min-width: 0; }
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.teamCard {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #0b1a10;
+  padding: 8px 4px;
+  text-align: center;
+  cursor: pointer;
+  color: #dfeee2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.teamCard .swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin: 0 auto 6px;
+  border: 2px solid rgba(255,255,255,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+.teamCard.selected { border-color: var(--gold); background: #17331f; }
+.teamCard.disabled { opacity: 0.35; cursor: not-allowed; }
+
+.swatchGroup { display: flex; gap: 10px; flex-wrap: wrap; }
+.colorSwatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+}
+.colorSwatch.selected { border-color: var(--gold); }
+.colorSwatch.kit { border-radius: 8px; }
+
+.textInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: #0b1a10;
+  color: #eafff0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.textInput:focus { border-color: var(--gold); outline: none; }
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #0b1a10;
+  border-radius: 8px;
+  padding: 6px 10px;
+  width: fit-content;
+}
+.stepBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: #17331f;
+  color: #eafff0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+#numValue { min-width: 28px; text-align: center; font-size: 1.1rem; font-weight: 900; color: #fff; }
+
+#characterCreator.hidden, #teamPickers.hidden { display: none; }
+
+.pillGroup { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  flex: 1;
+  min-width: 70px;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: #0b1a10;
+  color: #cfe9d4;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.pill.selected { border-color: var(--gold); background: #17331f; color: #fff; }
+
+.bigBtn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #3ecb63, #1f9c44);
+  color: #06210e;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #12712c, 0 10px 18px rgba(0,0,0,0.35);
+}
+.bigBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #12712c; }
+
+.linkBtn {
+  display: block;
+  margin: 12px auto 0;
+  background: none;
+  border: none;
+  color: #8fcf9c;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.howtoGrid { display: flex; gap: 24px; flex-wrap: wrap; }
+.howtoGrid > div { flex: 1; min-width: 200px; }
+.howtoGrid h3 { color: var(--gold); margin-bottom: 6px; }
+.howtoGrid ul { padding-left: 18px; line-height: 1.7; font-size: 0.88rem; }
+.hint { color: #9fd6ac; font-size: 0.8rem; margin-top: 14px; }
+
+/* ============ GAME SCREEN ============ */
+#gameScreen { flex-direction: column; align-items: stretch; justify-content: flex-start; overflow: hidden; }
+
+#hudTop {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, #0c1a10, #0a140d);
+  border-bottom: 2px solid #1c3a24;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+.hudTeam {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.hudTeam.right { justify-content: flex-end; }
+.hudBadge {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.55rem; font-weight: 900; flex: 0 0 auto;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+.hudName { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hudCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+#hudScore { font-size: 1.1rem; font-weight: 900; color: #fff; }
+#hudClock { font-size: 0.68rem; color: var(--gold); font-weight: 700; }
+.iconBtn {
+  border: none; background: #16301e; color: #eafff0;
+  width: 30px; height: 30px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+  flex: 0 0 auto;
+}
+
+#pitchWrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06120a;
+}
+#pitchCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#miniMap {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 150px;
+  height: 96px;
+  background: rgba(6, 20, 12, 0.55);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 6px;
+}
+
+#banner {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  padding: 10px 26px;
+  background: rgba(6, 16, 10, 0.85);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+}
+#banner .sub { display: block; font-size: 0.7rem; color: var(--gold); margin-top: 2px; letter-spacing: 2px; }
+#banner.hidden { display: none; }
+
+/* ============ TOUCH CONTROLS ============ */
+#touchControls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+}
+.touch-enabled #touchControls { display: block; }
+
+.joyBase {
+  position: absolute;
+  left: 22px;
+  bottom: 22px;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.25);
+  pointer-events: auto;
+}
+.joyStick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: rgba(255, 207, 77, 0.85);
+  border: 2px solid rgba(255,255,255,0.6);
+}
+
+/* Action-button cluster: anchored to the bottom of the screen. Shoot is the big, vivid-red
+   primary button (bottom-right corner); pass sits beside it on the same bottom row; cross,
+   tackle and sprint form a secondary row just above. */
+#actionButtons {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 250px;
+  height: 210px;
+  pointer-events: auto;
+}
+.actionBtn {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  color: #06210e;
+  font-weight: 900;
+  font-size: 0.68rem;
+  letter-spacing: 0.3px;
+  background: rgba(255,255,255,0.75);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+}
+.actionBtn:not(.big):not(.small) { width: 62px; height: 62px; }
+.actionBtn.small { width: 50px; height: 50px; font-size: 0.6rem; }
+.actionBtn.big { width: 78px; height: 78px; font-size: 0.82rem; }
+
+.actionBtn.shoot {
+  right: 0; bottom: 36px;
+  background: radial-gradient(circle at 35% 30%, #ff6b5e, #e11d1d 70%);
+  border-color: #ffb3ac;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(225, 29, 29, 0.55);
+}
+.actionBtn.pass {
+  right: 92px; bottom: 8px;
+  background: rgba(80, 180, 255, 0.85);
+  color: #001a2a;
+}
+.actionBtn.tackle {
+  right: 168px; bottom: 54px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1a1a1a;
+}
+.actionBtn.through {
+  right: 80px; bottom: 112px;
+  background: rgba(150, 255, 150, 0.85);
+  color: #012608;
+}
+.actionBtn.sprint {
+  right: 8px; bottom: 138px;
+  background: rgba(255, 207, 77, 0.85);
+}
+
+@media (min-width: 900px) {
+  :root { font-size: 17px; }
+}
+
+/* scrollbars in menu on small screens */
+.screen::-webkit-scrollbar { width: 6px; }
+.screen::-webkit-scrollbar-thumb { background: #1f4a2c; border-radius: 3px; }
