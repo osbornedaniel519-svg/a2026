@@ -82,9 +82,9 @@ class Match {
     if (SFX) SFX.whistle(true);
   }
 
-  scoreGoal(scoringTeam) {
+  scoreGoal(scoringTeam, side) {
     this.score[scoringTeam]++;
-    this.lastGoal = { team: scoringTeam, minute: Math.round(this.matchMinute()) };
+    this.lastGoal = { team: scoringTeam, minute: Math.round(this.matchMinute()), side };
     this.nextKickoffTeam = scoringTeam === 'home' ? 'away' : 'home';
     this.state = 'GOAL';
     this.stateTimer = 2.8;
@@ -320,7 +320,7 @@ class Match {
 
     if (ball.x <= 0 || ball.x >= FIELD.length) {
       if (inGoalMouthY && ball.z <= FIELD.crossbarHeight + 4 && !ball.owner) {
-        this.scoreGoal(ball.x <= 0 ? 'away' : 'home');
+        this.scoreGoal(ball.x <= 0 ? 'away' : 'home', ball.x <= 0 ? 0 : 1);
         return;
       }
       if (ball.owner) return;

@@ -59,8 +59,9 @@ automatically as play moves. Goalkeepers are always AI-controlled.
 - `js/constants.js` — field/physics/difficulty tuning and team data, plus the 1v1 court preset,
   a single-slot no-GK formation, and the character-creator palettes (skin tones, hair colors, kit
   presets) and fixed street-rival opponent
-- `js/entities.js` — `Player` and `Ball`, with an owner-follow dribble model and a real
-  gravity/bounce/friction simulation for the ball (height included, so shots can clear the bar)
+- `js/entities.js` — `Player` and `Ball`, with an owner-follow dribble model, a real
+  gravity/bounce/friction simulation for the ball (height included, so shots can clear the bar),
+  and a stamina multiplier that dips while a player sprints and recovers once they ease off
 - `js/ai.js` — 4-3-3 formation shape that breathes with the ball, double-team pressing near goal
   on Normal/Hard, and a decision loop (shoot / pass / dribble / clear) for every AI-controlled
   player, including a reactive diving goalkeeper. Whenever the ball is loose and unowned — a
@@ -93,7 +94,13 @@ automatically as play moves. Goalkeepers are always AI-controlled.
   glowing horizon — in place of the stadium stands, and reads each player's kit/skin/hair from
   their team definition so the custom character actually looks the way it was built; plus an
   aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and a 2D
-  top-down minimap
+  top-down minimap. The ball is shaded like a real sphere (radial gradient + a rolling pentagon
+  panel pattern + a fixed specular highlight) instead of a flat painted disc; shirts, shorts and
+  legs all pick up the same light-direction shading; distant pitch stripes fade toward each mode's
+  own horizon color for a touch of atmospheric depth; both walled courts (Outside and 1v1 Street)
+  get a faint twinkling star field in the open night sky; and goal nets sag naturally under gravity
+  and punch backward with a decaying ripple the instant a goal goes in, keyed to whichever net was
+  actually hit
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 

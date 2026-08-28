@@ -289,6 +289,18 @@ class Renderer {
     }
 
     if (walled) {
+      // A faint twinkling star field in the open sky above the stand, for a night-out feel.
+      const t = performance.now() / 1000;
+      for (let i = 0; i < 55; i++) {
+        const sx = (Math.abs(Math.sin(i * 12.9898)) % 1) * w;
+        const sy = (Math.abs(Math.sin(i * 78.233 + 4.1)) % 1) * bandTop * 0.9;
+        const twinkle = 0.35 + Math.abs(Math.sin(t * 1.3 + i * 2.4)) * 0.5;
+        ctx.fillStyle = `rgba(255,255,255,${twinkle * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.fillStyle = 'rgba(255,255,255,0.06)';
       for (let y = bandTop + 3; y < horizonY; y += 5) {
         const rowShift = ((y * 13) % 9);
@@ -338,11 +350,16 @@ class Renderer {
     }
   }
 
-  drawGround(ctx, walled) {
+  drawGround(ctx, walled, mode) {
     const m = FIELD.margin;
     const stripeW = walled ? 46 : 72;
     const colorA = walled ? '#3f464d' : '#1a5228';
     const colorB = walled ? '#363c42' : '#124020';
+    // Fade far stripes toward each mode's own horizon color (matches its sky/backdrop) for a
+    // touch of atmospheric depth instead of the pitch reading as a flat cutout.
+    const fogColor = mode === 'character' ? '#5a3a48' : (walled ? '#2b3038' : '#163826');
+    const fogStart = this.zoomUnits * 1.5;
+    const fogRange = this.zoomUnits * 2.3;
     let toggle = 0;
     for (let x = -m; x < FIELD.length + m; x += stripeW) {
       const x2 = Math.min(x + stripeW, FIELD.length + m);
@@ -352,6 +369,21 @@ class Renderer {
       const p4 = this.project(x, 0, FIELD.width + m);
       ctx.fillStyle = toggle % 2 === 0 ? colorA : colorB;
       fillQuad(ctx, p1, p2, p3, p4);
+
+      const avgCz = (p1.cz + p2.cz + p3.cz + p4.cz) / 4;
+      const fogT = clamp((avgCz - fogStart) / fogRange, 0, 0.5);
+      if (fogT > 0.02) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.lineTo(p3.sx, p3.sy); ctx.lineTo(p4.sx, p4.sy);
+        ctx.closePath();
+        ctx.clip();
+        ctx.globalAlpha = fogT;
+        ctx.fillStyle = fogColor;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
       toggle++;
     }
   }
@@ -575,18 +607,23 @@ class Renderer {
     }
   }
 
-  drawGoal3D(ctx, side) {
+  // rippleT: seconds since a goal was scored into THIS net (0 if none) — punches the mesh
+  // backward and lets it spring, on top of its constant gravity sag.
+  drawGoal3D(ctx, side, rippleT) {
     const midY = FIELD.width / 2;
     const baseX = side === 0 ? 0 : FIELD.length;
-    const backX = side === 0 ? -FIELD.goalDepth : FIELD.length + FIELD.goalDepth;
+    const dir = side === 0 ? -1 : 1;
+    const ripple = rippleT ? Math.sin(rippleT * 16) * Math.exp(-rippleT * 5.5) : 0;
+    const backX = baseX + dir * FIELD.goalDepth;
+    const rippleBackX = backX + dir * ripple * FIELD.goalDepth * 0.55;
     const gy0 = midY - FIELD.goalWidth / 2, gy1 = midY + FIELD.goalWidth / 2;
     const H = FIELD.crossbarHeight;
     const P = (x, h, z) => this.project(x, h, z);
 
     const fl0 = P(baseX, 0, gy0), fl1 = P(baseX, H, gy0);
     const fr0 = P(baseX, 0, gy1), fr1 = P(baseX, H, gy1);
-    const bl0 = P(backX, 0, gy0), bl1 = P(backX, H, gy0);
-    const br0 = P(backX, 0, gy1), br1 = P(backX, H, gy1);
+    const bl0 = P(rippleBackX, 0, gy0), bl1 = P(rippleBackX, H, gy0);
+    const br0 = P(rippleBackX, 0, gy1), br1 = P(rippleBackX, H, gy1);
 
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
     fillQuad(ctx, bl0, br0, br1, bl1);
@@ -594,13 +631,23 @@ class Renderer {
     fillQuad(ctx, fr0, br0, br1, fr1);
     fillQuad(ctx, fl1, fr1, br1, bl1);
 
+    // Vertical strands sag outward under gravity (more so mid-height) and pick up the ripple.
     ctx.strokeStyle = 'rgba(255,255,255,0.3)';
     ctx.lineWidth = 0.6;
-    const steps = 6;
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      segLine(ctx, P(backX, H * t, gy0), P(backX, H * t, gy1));
-      segLine(ctx, P(backX, 0, lerp(gy0, gy1, t)), P(backX, H, lerp(gy0, gy1, t)));
+    const cols = 7, rows = 6;
+    for (let i = 1; i < cols; i++) {
+      const y = lerp(gy0, gy1, i / cols);
+      const pts = [];
+      for (let j = 0; j <= rows; j++) {
+        const vt = j / rows;
+        const sag = Math.sin(vt * Math.PI) * (0.14 + ripple * 0.6);
+        pts.push(P(backX + dir * FIELD.goalDepth * sag, H * vt, y));
+      }
+      strokePolyline(ctx, pts);
+    }
+    for (let j = 1; j < rows; j++) {
+      const t = j / rows;
+      segLine(ctx, P(rippleBackX, H * t, gy0), P(rippleBackX, H * t, gy1));
     }
 
     ctx.strokeStyle = 'rgba(255,255,255,0.97)';
@@ -750,11 +797,14 @@ class Renderer {
     const armSwingR = kickSwing !== 0 ? kickSwing * 0.5 : -runSwing * 0.8;
     const armSwingL = kickSwing !== 0 ? -kickSwing * 0.3 : runSwing * 0.8;
 
+    const legGrad = ctx.createLinearGradient(0, 0, 0, legsH);
+    legGrad.addColorStop(0, shadeColor(skin, 6));
+    legGrad.addColorStop(1, shadeColor(skin, -16));
     const drawLeg = (offsetX, swing) => {
       ctx.save();
       ctx.translate(ground.sx + offsetX, legsY0);
       if (swing) ctx.rotate(-swing);
-      ctx.fillStyle = skin;
+      ctx.fillStyle = legGrad;
       roundRectPath(ctx, -legW / 2, 0, legW, legsH, legW * 0.3);
       ctx.fill();
       ctx.fillStyle = '#20201f';
@@ -766,7 +816,10 @@ class Renderer {
     drawLeg(legOffset, legSwingR);
 
     // shorts
-    ctx.fillStyle = kit.secondary;
+    const shortsGrad = ctx.createLinearGradient(0, torsoTopY + shirtH, 0, torsoTopY + shirtH + shortsH);
+    shortsGrad.addColorStop(0, shadeColor(kit.secondary, 10));
+    shortsGrad.addColorStop(1, shadeColor(kit.secondary, -10));
+    ctx.fillStyle = shortsGrad;
     roundRectPath(ctx, ground.sx - bodyW / 2, torsoTopY + shirtH, bodyW, shortsH + 1, bodyW * 0.22);
     ctx.fill();
 
@@ -879,19 +932,51 @@ class Renderer {
     const r = Math.max(1.4, PHYS.ballRadius * pos.scale);
     ctx.save();
     ctx.translate(pos.sx, pos.sy);
-    ctx.rotate(ball.spin % (Math.PI * 2));
-    ctx.fillStyle = '#f4f6f2';
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(20,20,20,0.6)';
-    ctx.lineWidth = 1;
+
+    // Sphere shading (light from upper-left) instead of a flat-filled disc.
+    const shade = ctx.createRadialGradient(-r * 0.38, -r * 0.42, r * 0.08, 0, 0, r * 1.05);
+    shade.addColorStop(0, '#ffffff');
+    shade.addColorStop(0.55, '#eef1ea');
+    shade.addColorStop(1, '#c7cabf');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = shade;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(20,20,20,0.55)';
+    ctx.lineWidth = Math.max(0.4, r * 0.06);
     ctx.stroke();
-    ctx.fillStyle = 'rgba(20,20,20,0.55)';
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2;
+
+    // Classic pentagon-panel pattern, rolling with the ball's spin.
+    if (r > 1.8) {
+      ctx.save();
+      ctx.rotate(ball.spin % (Math.PI * 2));
+      const pentR = r * 0.34;
+      ctx.fillStyle = 'rgba(24,24,22,0.88)';
       ctx.beginPath();
-      ctx.arc(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * 0.22, 0, Math.PI * 2);
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i / 5) * Math.PI * 2;
+        const px = Math.cos(a) * pentR, py = Math.sin(a) * pentR;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = 'rgba(24,24,22,0.65)';
+      ctx.lineWidth = Math.max(0.35, r * 0.055);
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * pentR, Math.sin(a) * pentR);
+        ctx.lineTo(Math.cos(a) * r * 0.92, Math.sin(a) * r * 0.92);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
+
+    // Specular highlight, fixed relative to the light source (not the spin).
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.32, -r * 0.36, r * 0.28, r * 0.18, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }
 
@@ -910,12 +995,13 @@ class Renderer {
     if (match.mode === 'character') this.drawCityBackdrop(ctx);
     else this.drawSky(ctx, match.walled, match.state === 'GOAL');
     if (!match.walled) this.drawEndStands(ctx);
-    this.drawGround(ctx, match.walled);
+    this.drawGround(ctx, match.walled, match.mode);
     if (!match.walled) this.drawPitchWear(ctx);
     this.drawFloodlightGlow(ctx);
     this.drawLines(ctx, match.walled);
-    this.drawGoal3D(ctx, 0);
-    this.drawGoal3D(ctx, 1);
+    const rippleT = (match.state === 'GOAL' && match.lastGoal) ? clamp(2.8 - match.stateTimer, 0, 2.8) : 0;
+    this.drawGoal3D(ctx, 0, match.lastGoal && match.lastGoal.side === 0 ? rippleT : 0);
+    this.drawGoal3D(ctx, 1, match.lastGoal && match.lastGoal.side === 1 ? rippleT : 0);
     if (!match.walled) { this.drawAdBoards(ctx); this.drawPitchsideFans(ctx); }
 
     if (match.ball.speed() > 260) {

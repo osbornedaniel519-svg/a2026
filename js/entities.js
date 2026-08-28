@@ -19,16 +19,14 @@ class Player {
     this.moveDir = { x: 0, y: 0 };
     this.wantsSprint = false;
 
-    this.homeX = x; this.homeY = y; // formation anchor, refreshed every frame by AI
     this.kickCooldown = 0;
     this.tackleCooldown = 0;
-    this.isUser = false;
     this.diveTimer = 0;
     this.diveDuration = 0;
     this.diveDir = { x: 0, y: 0 };
     this.kickAnimTimer = 0;   // >0 while the kicking-leg swing animation is playing
     this.runPhase = 0;       // running-cycle phase for the arm/leg swing while moving
-    this.staminaFatigue = 1; // multiplier, drops slightly with prolonged sprinting
+    this.staminaFatigue = 1; // multiplier that dips while sprinting hard and recovers at rest
 
     // Simple ability spread so squads aren't perfectly uniform.
     this.skill = rand(0.85, 1.12);
@@ -40,7 +38,11 @@ class Player {
       this.x += this.diveDir.x * 260 * dt;
       this.y += this.diveDir.y * 260 * dt;
     } else {
+      const sprinting = this.wantsSprint && (this.moveDir.x !== 0 || this.moveDir.y !== 0);
       const speed = (this.wantsSprint ? this.sprintSpeed : this.baseSpeed) * this.staminaFatigue;
+      this.staminaFatigue = sprinting
+        ? Math.max(0.8, this.staminaFatigue - 0.045 * dt)
+        : Math.min(1, this.staminaFatigue + 0.1 * dt);
       const targetVX = this.moveDir.x * speed;
       const targetVY = this.moveDir.y * speed;
       const accel = PHYS.playerAccel * dt;
@@ -83,10 +85,6 @@ class Ball {
     this.lastToucher = null;
     this.spin = 0; // purely visual roll accumulator
   }
-
-  get isLoose() { return !this.owner; }
-
-  release() { this.owner = null; }
 
   update(dt) {
     this.spin += Math.hypot(this.vx, this.vy) * dt * 0.02;

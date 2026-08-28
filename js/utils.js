@@ -62,12 +62,6 @@ function angleDiff(a, b) {
   return d;
 }
 
-function fmtClock(totalSeconds) {
-  const m = Math.floor(totalSeconds);
-  const s = Math.floor((totalSeconds - m) * 60);
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
 function fmtMatchMinute(min) {
   return `${Math.min(90, Math.max(0, Math.floor(min)))}'`;
 }
