@@ -16,18 +16,52 @@
       <p class="tagline">an original arcade soccer game</p>
 
       <div class="menuSection">
-        <h2>Your Team</h2>
-        <div id="homePicker" class="teamGrid"></div>
-      </div>
-
-      <div class="menuSection">
-        <h2>Opponent</h2>
-        <div id="awayPicker" class="teamGrid"></div>
-      </div>
-
-      <div class="menuSection">
         <h2>Where to Play</h2>
         <div id="modePicker" class="pillGroup"></div>
+      </div>
+
+      <div id="teamPickers">
+        <div class="menuSection">
+          <h2>Your Team</h2>
+          <div id="homePicker" class="teamGrid"></div>
+        </div>
+
+        <div class="menuSection">
+          <h2>Opponent</h2>
+          <div id="awayPicker" class="teamGrid"></div>
+        </div>
+      </div>
+
+      <div id="characterCreator" class="hidden">
+        <div class="menuSection">
+          <h2>Nickname</h2>
+          <input id="charName" class="textInput" maxlength="10" placeholder="YOU" value="YOU" />
+        </div>
+        <div class="menuRow">
+          <div class="menuSection half">
+            <h2>Skin Tone</h2>
+            <div id="skinPicker" class="swatchGroup"></div>
+          </div>
+          <div class="menuSection half">
+            <h2>Hair Color</h2>
+            <div id="hairPicker" class="swatchGroup"></div>
+          </div>
+        </div>
+        <div class="menuSection">
+          <h2>Kit Color</h2>
+          <div id="kitPicker" class="swatchGroup"></div>
+        </div>
+        <div class="menuSection">
+          <h2>Squad Number</h2>
+          <div id="numberStepper" class="stepper">
+            <button type="button" id="numDown" class="stepBtn">−</button>
+            <span id="numValue">10</span>
+            <button type="button" id="numUp" class="stepBtn">+</button>
+          </div>
+        </div>
+        <p class="hint">Play 1v1 against a street rival on a tight walled court, skyscrapers
+          towering overhead. No goalkeepers, no stoppages — just you, the rival, and two small
+          nets.</p>
       </div>
 
       <div class="menuRow">

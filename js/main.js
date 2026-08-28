@@ -1,6 +1,7 @@
 // ===================== Bootstrap: menu wiring + game loop =====================
 (function () {
   const sel = { homeIdx: 0, awayIdx: 1, diff: 'Normal', len: 'Normal', mode: 'stadium' };
+  const charSel = { skinIdx: 1, hairIdx: 0, kitIdx: 0, number: 10 };
 
   const screens = {
     menu: document.getElementById('menu'),
@@ -53,14 +54,52 @@
     });
   }
 
+  function renderSwatchGroup(containerId, colors, currentIdx, onPick, kitStyle) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    colors.forEach((color, i) => {
+      const sw = document.createElement('div');
+      const bg = kitStyle ? color.primary : color;
+      sw.className = 'colorSwatch' + (kitStyle ? ' kit' : '') + (i === currentIdx() ? ' selected' : '');
+      sw.style.background = bg;
+      sw.addEventListener('click', () => {
+        onPick(i);
+        [...el.children].forEach(c => c.classList.remove('selected'));
+        sw.classList.add('selected');
+      });
+      el.appendChild(sw);
+    });
+  }
+
+  function updateModeVisibility() {
+    const isChar = sel.mode === 'character';
+    document.getElementById('teamPickers').classList.toggle('hidden', isChar);
+    document.getElementById('characterCreator').classList.toggle('hidden', !isChar);
+  }
+
   renderTeamPicker('homePicker', true);
   renderTeamPicker('awayPicker', false);
   refreshPickers();
 
+  renderSwatchGroup('skinPicker', SKIN_TONES, () => charSel.skinIdx, (i) => { charSel.skinIdx = i; });
+  renderSwatchGroup('hairPicker', HAIR_COLORS, () => charSel.hairIdx, (i) => { charSel.hairIdx = i; });
+  renderSwatchGroup('kitPicker', KIT_PRESETS, () => charSel.kitIdx, (i) => { charSel.kitIdx = i; }, true);
+
+  document.getElementById('numDown').addEventListener('click', () => {
+    charSel.number = Math.max(1, charSel.number - 1);
+    document.getElementById('numValue').textContent = charSel.number;
+  });
+  document.getElementById('numUp').addEventListener('click', () => {
+    charSel.number = Math.min(99, charSel.number + 1);
+    document.getElementById('numValue').textContent = charSel.number;
+  });
+
   renderPillGroup('modePicker', [
     { key: 'stadium', label: 'Stadium · 11v11' },
     { key: 'street', label: 'Outside · 4v4' },
-  ], () => sel.mode, (k) => { sel.mode = k; });
+    { key: 'character', label: '1v1 Street' },
+  ], () => sel.mode, (k) => { sel.mode = k; updateModeVisibility(); });
+  updateModeVisibility();
 
   renderPillGroup('diffPicker', [
     { key: 'Easy', label: 'Easy' },
@@ -107,9 +146,29 @@
 
   function startMatch() {
     SFX.resume();
-    const homeDef = TEAMS[sel.homeIdx];
-    const awayDef = TEAMS[sel.awayIdx];
+    let homeDef, awayDef;
+    if (sel.mode === 'character') {
+      const kit = KIT_PRESETS[charSel.kitIdx];
+      const nick = (document.getElementById('charName').value || 'YOU').trim().toUpperCase().slice(0, 10) || 'YOU';
+      homeDef = {
+        code: nick.slice(0, 3) || 'YOU',
+        name: nick,
+        primary: kit.primary,
+        secondary: kit.secondary,
+        text: kit.text,
+        skin: SKIN_TONES[charSel.skinIdx],
+        hair: HAIR_COLORS[charSel.hairIdx],
+      };
+      awayDef = STREET_RIVAL;
+    } else {
+      homeDef = TEAMS[sel.homeIdx];
+      awayDef = TEAMS[sel.awayIdx];
+    }
     match = new Match(homeDef, awayDef, sel.diff, sel.len, sel.mode);
+    if (sel.mode === 'character') {
+      match.home[0].number = charSel.number;
+      match.home[0].name = homeDef.name;
+    }
     if (match.ambientCrowd) SFX.startAmbientCrowd();
 
     screens.menu.classList.add('hidden');

@@ -30,10 +30,23 @@ const STREET_FIELD = {
   crossbarHeight: 80,
 };
 
+// A tight 1v1 court: two small goals, no keepers, walled like the street court (bounces, no
+// restarts) — a duel decided by dribbling skill, not team shape.
+const ONE_V_ONE_FIELD = {
+  length: 260,
+  width: 180,
+  margin: 16,
+  goalWidth: 58,
+  goalDepth: 14,
+  crossbarHeight: 54,
+};
+
+const FIELD_PRESETS = { stadium: STADIUM_FIELD, street: STREET_FIELD, character: ONE_V_ONE_FIELD };
+
 const FIELD = Object.assign({}, STADIUM_FIELD);
 
 function applyFieldMode(mode) {
-  Object.assign(FIELD, mode === 'street' ? STREET_FIELD : STADIUM_FIELD);
+  Object.assign(FIELD, FIELD_PRESETS[mode] || STADIUM_FIELD);
 }
 
 const PHYS = {
@@ -119,10 +132,30 @@ const FORMATION_STREET = [
   { role: 'FWD', fx: 0.80, fy: 0.42 },
 ];
 
+// 1v1 Character mode: a single outfield player per side, no goalkeeper — a duel, not a team shape.
+const FORMATION_1V1 = [
+  { role: 'FWD', fx: 0.42, fy: 0.5 },
+];
+
 const GAME_MODES = {
   stadium: { label: 'Stadium', formation: FORMATION_433, walled: false, cameraZoom: 600, ambientCrowd: true },
   street: { label: 'Outside', formation: FORMATION_STREET, walled: true, cameraZoom: 400, ambientCrowd: false },
+  character: { label: '1v1 Street', formation: FORMATION_1V1, walled: true, cameraZoom: 220, ambientCrowd: false },
 };
+
+// ===================== Character creator (1v1 mode) =====================
+const SKIN_TONES = ['#f0c8a0', '#e3b590', '#c68863', '#a86b42', '#8d5a3c', '#5c3a24'];
+const KIT_PRESETS = [
+  { primary: '#e0273b', secondary: '#ffffff', text: '#ffffff' },
+  { primary: '#1035a6', secondary: '#f4c300', text: '#ffffff' },
+  { primary: '#0a6c2e', secondary: '#ffffff', text: '#ffffff' },
+  { primary: '#1a1a1a', secondary: '#e0273b', text: '#ffffff' },
+  { primary: '#f4c300', secondary: '#111111', text: '#111111' },
+  { primary: '#7a1cc8', secondary: '#ffffff', text: '#ffffff' },
+  { primary: '#0c8ac8', secondary: '#ffffff', text: '#ffffff' },
+  { primary: '#e0803c', secondary: '#1a1a1a', text: '#111111' },
+];
+const STREET_RIVAL = { code: 'CPU', name: 'Street Rival', primary: '#2a2a2e', secondary: '#e0273b', text: '#ffffff', skin: '#a86b42', hair: '#0f0d0b' };
 
 const FIRST_NAMES = ['Alex','Marco','Leo','Diego','Sam','Kai','Theo','Noah','Luca','Omar','Ben','Josh','Enzo','Yuto','Mateo','Ryo','Tariq','Nico','Owen','Iker','Hugo','Milo','Zane','Rico'];
 const LAST_NAMES = ['Silva','Novak','Reyes','Kessler','Hartmann','Bianchi','Okafor','Suzuki','Moreno','Whitfield','Dubois','Larsen','Petrov','Nakamura','Alvarez','Sato','Kimura','Costa','Fischer','Delgado','Aguilar','Voss','Reyes','Park'];

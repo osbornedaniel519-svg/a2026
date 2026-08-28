@@ -190,6 +190,58 @@ class Renderer {
     ctx.stroke();
   }
 
+  // 1v1 Character mode: a dusk city skyline towering over the small court instead of a stadium
+  // or plain sky — "massive buildings" right behind the boards.
+  drawCityBackdrop(ctx) {
+    const w = this.canvas.width, h = this.canvas.height;
+    const grad = ctx.createLinearGradient(0, 0, 0, h * 0.62);
+    grad.addColorStop(0, '#1b1030');
+    grad.addColorStop(0.55, '#3a2148');
+    grad.addColorStop(1, '#7a4a52');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = 'rgba(255, 190, 130, 0.28)';
+    ctx.beginPath();
+    ctx.arc(w * 0.72, h * 0.26, w * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    const farL = this.project(0, 0, FIELD.width + FIELD.margin);
+    const farR = this.project(FIELD.length, 0, FIELD.width + FIELD.margin);
+    const horizonY = Math.min(Math.max(farL.sy, 0), Math.max(farR.sy, 0), h * 0.6);
+
+    this.drawSkylineLayer(ctx, horizonY, h * 0.24, '#241833', 1, w, false);
+    this.drawSkylineLayer(ctx, horizonY, h * 0.4, '#120b1c', 2, w, true);
+  }
+
+  drawSkylineLayer(ctx, horizonY, maxH, color, seed, w, lit) {
+    const bldgW = 58;
+    let x = -30, i = 0;
+    while (x < w + 40) {
+      const hHash = Math.abs(Math.sin((i + seed * 13.7) * 12.9898)) % 1;
+      const wHash = Math.abs(Math.sin((i + seed * 7.3) * 45.16)) % 1;
+      const bh = maxH * (0.32 + hHash * 0.68);
+      const bw = bldgW * (0.65 + wHash * 0.6);
+      const top = horizonY - bh;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, top, bw, bh + 6);
+      if (lit) {
+        const stepX = 8, stepY = 10;
+        for (let wy = top + 6; wy < horizonY - 6; wy += stepY) {
+          for (let wx = x + 4; wx < x + bw - 4; wx += stepX) {
+            const wHash2 = Math.abs(Math.sin(wx * 3.1 + wy * 7.7)) % 1;
+            if (wHash2 > 0.45) {
+              ctx.fillStyle = wHash2 > 0.85 ? 'rgba(255,236,180,0.85)' : 'rgba(255,214,140,0.55)';
+              ctx.fillRect(wx, wy, 2.6, 3.4);
+            }
+          }
+        }
+      }
+      x += bw + 6;
+      i++;
+    }
+  }
+
   drawSky(ctx, walled, celebrating) {
     const w = this.canvas.width, h = this.canvas.height;
     const grad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
@@ -560,6 +612,7 @@ class Renderer {
 
   drawGoalkeeperDive(ctx, p, colorDef, ground, top, scale) {
     const kit = { primary: '#1d2126', secondary: colorDef.primary, text: '#ffffff' };
+    const skin = colorDef.skin || '#e3b590';
     const dur = p.diveDuration || 0.4;
     const elapsed = clamp(1 - p.diveTimer / dur, 0, 1);
     const rot = Math.min(1, elapsed / 0.3) * 1.3; // fast snap into a stretched pose, then hold
@@ -577,7 +630,7 @@ class Renderer {
     ctx.translate(ground.sx, ground.sy - H * 0.08);
     ctx.rotate(rot);
 
-    ctx.fillStyle = '#e3b590';
+    ctx.fillStyle = skin;
     roundRectPath(ctx, -bodyW * 0.55, -H * 0.22, bodyW * 0.4, H * 0.22, bodyW * 0.18);
     ctx.fill();
     roundRectPath(ctx, bodyW * 0.15, -H * 0.24, bodyW * 0.4, H * 0.24, bodyW * 0.18);
@@ -610,7 +663,7 @@ class Renderer {
 
     ctx.beginPath();
     ctx.arc(0, -H * 0.86, headR, 0, Math.PI * 2);
-    ctx.fillStyle = '#e3b590';
+    ctx.fillStyle = skin;
     ctx.fill();
     ctx.strokeStyle = kit.secondary;
     ctx.lineWidth = Math.max(0.6, 1.1 * scale);
@@ -666,7 +719,8 @@ class Renderer {
 
     // Goalkeepers wear a distinct kit (dark shirt, team-colored trim) and gloves, like real keepers.
     const kit = p.role === 'GK' ? { primary: '#1d2126', secondary: colorDef.primary, text: '#ffffff' } : colorDef;
-    const handColor = p.role === 'GK' ? '#ffe14d' : '#e3b590';
+    const skin = colorDef.skin || '#e3b590';
+    const handColor = p.role === 'GK' ? '#ffe14d' : skin;
 
     const bodyW = Math.max(2, 14 * scale);
     const shoulderW = bodyW * 1.22;
@@ -700,7 +754,7 @@ class Renderer {
       ctx.save();
       ctx.translate(ground.sx + offsetX, legsY0);
       if (swing) ctx.rotate(-swing);
-      ctx.fillStyle = '#e3b590';
+      ctx.fillStyle = skin;
       roundRectPath(ctx, -legW / 2, 0, legW, legsH, legW * 0.3);
       ctx.fill();
       ctx.fillStyle = '#20201f';
@@ -766,13 +820,13 @@ class Renderer {
     // head + simple hair cap
     ctx.beginPath();
     ctx.ellipse(ground.sx, headCenterY, headR * 0.92, headR, 0, 0, Math.PI * 2);
-    ctx.fillStyle = '#e3b590';
+    ctx.fillStyle = skin;
     ctx.fill();
-    ctx.strokeStyle = shadeColor('#e3b590', -18);
+    ctx.strokeStyle = shadeColor(skin, -18);
     ctx.lineWidth = Math.max(0.5, scale * 0.6);
     ctx.stroke();
 
-    ctx.fillStyle = HAIR_COLORS[p.number % HAIR_COLORS.length];
+    ctx.fillStyle = colorDef.hair || HAIR_COLORS[p.number % HAIR_COLORS.length];
     ctx.beginPath();
     ctx.ellipse(ground.sx, headCenterY - headR * 0.32, headR * 0.94, headR * 0.62, 0, Math.PI, Math.PI * 2);
     ctx.fill();
@@ -853,7 +907,8 @@ class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.drawSky(ctx, match.walled, match.state === 'GOAL');
+    if (match.mode === 'character') this.drawCityBackdrop(ctx);
+    else this.drawSky(ctx, match.walled, match.state === 'GOAL');
     if (!match.walled) this.drawEndStands(ctx);
     this.drawGround(ctx, match.walled);
     if (!match.walled) this.drawPitchWear(ctx);

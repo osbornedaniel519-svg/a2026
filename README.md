@@ -30,6 +30,10 @@ Pick one under "Where to Play" in the menu:
 - **Outside · 4v4** — a small walled cage/court pickup game (1 keeper + 3 outfield each). The
   ball bounces off the boards instead of going out, so there's no stoppage besides kickoffs and
   goals — quick, chaotic, arcade street football against NPCs.
+- **1v1 Street** — build your own character (skin tone, hair color, kit color, nickname, squad
+  number) and duel a fixed NPC rival one-on-one on a tight walled court, no goalkeepers, ringed by
+  a dusk city skyline of skyscrapers. Same bounce-off-the-boards physics as Outside, just scaled
+  down to a pure dribble-and-finish showdown.
 
 ## Controls
 
@@ -52,7 +56,9 @@ automatically as play moves. Goalkeepers are always AI-controlled.
 
 ## How it works
 
-- `js/constants.js` — field/physics/difficulty tuning and team data
+- `js/constants.js` — field/physics/difficulty tuning and team data, plus the 1v1 court preset,
+  a single-slot no-GK formation, and the character-creator palettes (skin tones, hair colors, kit
+  presets) and fixed street-rival opponent
 - `js/entities.js` — `Player` and `Ball`, with an owner-follow dribble model and a real
   gravity/bounce/friction simulation for the ball (height included, so shots can clear the bar)
 - `js/ai.js` — 4-3-3 formation shape that breathes with the ball, double-team pressing near goal
@@ -82,8 +88,12 @@ automatically as play moves. Goalkeepers are always AI-controlled.
   harder on goals), true 3D stand walls beyond both goals so the ground feels enclosed from more
   than one side, a row of genuine 3D-projected spectators standing pitch-side along the far
   touchline (a closer, more tangible layer than the 2D stand texture behind them), floodlight
-  glow, pitch wear patches, a fast ball motion trail, and a vignette; plus an aspect-ratio-adaptive
-  viewport (fills the screen on any device with no letterboxing) and a 2D top-down minimap
+  glow, pitch wear patches, a fast ball motion trail, and a vignette; 1v1 Street mode instead
+  renders a dusk skyline backdrop — two parallax layers of skyscrapers with lit windows behind a
+  glowing horizon — in place of the stadium stands, and reads each player's kit/skin/hair from
+  their team definition so the custom character actually looks the way it was built; plus an
+  aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and a 2D
+  top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 
