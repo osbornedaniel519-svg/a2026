@@ -24,7 +24,9 @@ class Player {
     this.tackleCooldown = 0;
     this.isUser = false;
     this.diveTimer = 0;
+    this.diveDuration = 0;
     this.diveDir = { x: 0, y: 0 };
+    this.kickAnimTimer = 0;   // >0 while the kicking-leg swing animation is playing
     this.staminaFatigue = 1; // multiplier, drops slightly with prolonged sprinting
 
     // Simple ability spread so squads aren't perfectly uniform.
@@ -56,10 +58,12 @@ class Player {
 
     if (this.kickCooldown > 0) this.kickCooldown -= dt;
     if (this.tackleCooldown > 0) this.tackleCooldown -= dt;
+    if (this.kickAnimTimer > 0) this.kickAnimTimer -= dt;
   }
 
   startDive(dirX, dirY, duration) {
     this.diveTimer = duration;
+    this.diveDuration = duration;
     const n = normalize(dirX, dirY);
     this.diveDir = { x: n.x, y: n.y };
   }
@@ -142,6 +146,7 @@ function kickBall(ball, player, dirAngle, power, liftFactor) {
   ball.lastTouchTeam = player.team;
   ball.lastToucher = player;
   player.kickCooldown = 0.28;
+  player.kickAnimTimer = PHYS.kickAnimDuration;
 }
 
 function makeSquad(team, teamDef, seed, formation) {

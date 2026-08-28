@@ -53,6 +53,7 @@ const PHYS = {
   playerSprintSpeed: 300,
   gkBaseSpeed: 175,
   gkSprintSpeed: 250,
+  kickAnimDuration: 0.32, // seconds the kicking-leg swing animation plays for
 };
 
 const DIFFICULTY = {

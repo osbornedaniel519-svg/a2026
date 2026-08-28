@@ -63,10 +63,12 @@ automatically as play moves. Goalkeepers are always AI-controlled.
 - `js/render.js` — a small hand-rolled 3D camera (look-at + perspective projection, no
   WebGL/engine) that follows the ball like a broadcast camera; the pitch, goals and players
   (billboarded kit/shorts/legs sprites, depth-sorted) are projected through it for both the grass
-  stadium and the walled concrete court. Stadium mode adds perimeter sponsor boards (fictional
-  brands), a tiered crowd with colored fan sections, floodlight glow, pitch wear patches, a fast
-  ball motion trail, and a vignette; plus an aspect-ratio-adaptive viewport (fills the screen on
-  any device with no letterboxing) and a 2D top-down minimap
+  stadium and the walled concrete court. Players play a leg-swing kick animation whenever they
+  strike the ball, and goalkeepers snap into a stretched, arm-reaching dive pose for saves.
+  Stadium mode adds perimeter sponsor boards (fictional brands), a tiered crowd with colored fan
+  sections, floodlight glow, pitch wear patches, a fast ball motion trail, and a vignette; plus an
+  aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and a 2D
+  top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 

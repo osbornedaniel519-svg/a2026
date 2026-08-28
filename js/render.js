@@ -433,12 +433,77 @@ class Renderer {
     segLine(ctx, fl1, fr1);
   }
 
+  drawGoalkeeperDive(ctx, p, colorDef, ground, top, scale) {
+    const dur = p.diveDuration || 0.4;
+    const elapsed = clamp(1 - p.diveTimer / dur, 0, 1);
+    const rot = Math.min(1, elapsed / 0.3) * 1.3; // fast snap into a stretched pose, then hold
+
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(ground.sx, ground.sy, 16 * scale, 6 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const H = Math.max(6, ground.sy - top.sy);
+    const bodyW = Math.max(2, 13 * scale);
+    const headR = bodyW * 0.62;
+
+    ctx.save();
+    ctx.translate(ground.sx, ground.sy - H * 0.08);
+    ctx.rotate(rot);
+
+    ctx.fillStyle = '#e3b590';
+    roundRectPath(ctx, -bodyW * 0.55, -H * 0.22, bodyW * 0.4, H * 0.22, bodyW * 0.18);
+    ctx.fill();
+    roundRectPath(ctx, bodyW * 0.15, -H * 0.24, bodyW * 0.4, H * 0.24, bodyW * 0.18);
+    ctx.fill();
+
+    ctx.fillStyle = colorDef.secondary;
+    roundRectPath(ctx, -bodyW * 0.5, -H * 0.42, bodyW, H * 0.2, bodyW * 0.25);
+    ctx.fill();
+
+    ctx.fillStyle = colorDef.primary;
+    ctx.strokeStyle = colorDef.secondary;
+    ctx.lineWidth = Math.max(0.6, 1.3 * scale);
+    roundRectPath(ctx, -bodyW * 0.5, -H * 0.72, bodyW, H * 0.3, bodyW * 0.3);
+    ctx.fill();
+    ctx.stroke();
+
+    // reaching arm, extended past the head, with a glove
+    ctx.strokeStyle = colorDef.primary;
+    ctx.lineWidth = Math.max(1.5, bodyW * 0.34);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bodyW * 0.3, -H * 0.66);
+    ctx.lineTo(bodyW * 1.5, -H * 0.98);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = '#ffe14d';
+    ctx.beginPath();
+    ctx.arc(bodyW * 1.55, -H * 1.0, headR * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(0, -H * 0.86, headR, 0, Math.PI * 2);
+    ctx.fillStyle = '#e3b590';
+    ctx.fill();
+    ctx.strokeStyle = colorDef.secondary;
+    ctx.lineWidth = Math.max(0.6, 1.1 * scale);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
   drawPlayer3D(ctx, p, colorDef, isControlled) {
     const H = p.role === 'GK' ? GK_BILLBOARD_HEIGHT : BILLBOARD_HEIGHT;
     const ground = this.project(p.x, 0, p.y);
     if (!ground.visible) return;
     const top = this.project(p.x, H, p.y);
     const scale = ground.scale;
+
+    if (p.isDiving()) {
+      this.drawGoalkeeperDive(ctx, p, colorDef, ground, top, scale);
+      return;
+    }
 
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath();
@@ -472,18 +537,38 @@ class Renderer {
     const legW = bodyW * 0.24;
     const legOffset = bodyW * 0.19;
 
-    // legs (skin) with small dark boots at the feet
+    // legs (skin) with small dark boots at the feet. The right leg swings through a kick
+    // animation right after this player strikes the ball (see kickBall() in entities.js).
+    const bootH = Math.max(1, legsH * 0.22);
+    const kickT = p.kickAnimTimer > 0 ? clamp(1 - p.kickAnimTimer / PHYS.kickAnimDuration, 0, 1) : 0;
+    const kickSwing = kickT > 0 ? Math.sin(kickT * Math.PI) * 0.95 : 0;
+
     ctx.fillStyle = '#e3b590';
     roundRectPath(ctx, ground.sx - legOffset - legW / 2, legsY0, legW, legsH, legW * 0.3);
     ctx.fill();
-    roundRectPath(ctx, ground.sx + legOffset - legW / 2, legsY0, legW, legsH, legW * 0.3);
-    ctx.fill();
-    const bootH = Math.max(1, legsH * 0.22);
     ctx.fillStyle = '#20201f';
     roundRectPath(ctx, ground.sx - legOffset - legW / 2, bodyBotY - bootH, legW, bootH, legW * 0.3);
     ctx.fill();
-    roundRectPath(ctx, ground.sx + legOffset - legW / 2, bodyBotY - bootH, legW, bootH, legW * 0.3);
-    ctx.fill();
+
+    if (kickSwing !== 0) {
+      ctx.save();
+      ctx.translate(ground.sx + legOffset, legsY0);
+      ctx.rotate(-kickSwing);
+      ctx.fillStyle = '#e3b590';
+      roundRectPath(ctx, -legW / 2, 0, legW, legsH, legW * 0.3);
+      ctx.fill();
+      ctx.fillStyle = '#20201f';
+      roundRectPath(ctx, -legW / 2, legsH - bootH, legW, bootH, legW * 0.3);
+      ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#e3b590';
+      roundRectPath(ctx, ground.sx + legOffset - legW / 2, legsY0, legW, legsH, legW * 0.3);
+      ctx.fill();
+      ctx.fillStyle = '#20201f';
+      roundRectPath(ctx, ground.sx + legOffset - legW / 2, bodyBotY - bootH, legW, bootH, legW * 0.3);
+      ctx.fill();
+    }
 
     // shorts
     ctx.fillStyle = colorDef.secondary;
