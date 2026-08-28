@@ -258,13 +258,18 @@ class Renderer {
         let fi = 0;
         for (let x = rowShift; x < w; x += colStep, fi++) {
           const hash = Math.abs(Math.sin((fi * 7 + ri * 13.1) * 12.9898)) % 1;
+          const colorHash = Math.abs(Math.sin((fi * 3.7 + ri * 9.3) * 78.233)) % 1;
           const bob = Math.sin(t * speed - x * 0.045 + hash * 6.28) * amp;
           const bright = (0.45 + hash * 0.4) * tierBright;
-          ctx.fillStyle = `rgba(255,236,220,${0.17 * bright})`;
+          // Pale head, individually colored clothing — a genuine mix of different supporters.
+          ctx.fillStyle = `rgba(255,236,220,${0.15 * bright})`;
           ctx.beginPath();
           ctx.arc(x, y + bob, 1.3, 0, Math.PI * 2);
           ctx.fill();
+          ctx.globalAlpha = 0.6 * bright;
+          ctx.fillStyle = FAN_COLORS[Math.floor(colorHash * FAN_COLORS.length)];
           ctx.fillRect(x - 1.1, y + bob + 1.3, 2.2, 2.5);
+          ctx.globalAlpha = 1;
         }
       }
     }
@@ -321,6 +326,41 @@ class Renderer {
         const gx = lerp(x0, x1, t), gy = lerp(y0, y1, t);
         segLine(ctx, this.project(gx, 0, gy), this.project(gx, wallH, gy));
       }
+    }
+  }
+
+  // True 3D stand walls just beyond each goal end, so the stadium reads as enclosed on more
+  // than just the single background band when the camera pans toward either goal.
+  drawEndStands(ctx) {
+    const m = FIELD.margin;
+    const wallH = 175;
+    const inset = m * 0.95;
+    const z0 = -m, z1 = FIELD.width + m;
+    const ends = [-inset, FIELD.length + inset];
+    for (const ex of ends) {
+      const g0 = this.project(ex, 0, z0), g1 = this.project(ex, 0, z1);
+      const t0 = this.project(ex, wallH, z0), t1 = this.project(ex, wallH, z1);
+      if (!g0.visible && !g1.visible) continue;
+      const grad = ctx.createLinearGradient(t0.sx, t0.sy, g0.sx, g0.sy);
+      grad.addColorStop(0, '#0a120e');
+      grad.addColorStop(1, '#1a3322');
+      ctx.fillStyle = grad;
+      fillQuad(ctx, g0, g1, t1, t0);
+
+      // A handful of colored fan-section patches for a bit of life without per-fan cost.
+      const steps = 8;
+      for (let i = 0; i < steps; i++) {
+        const ta = i / steps, tb = (i + 1) / steps;
+        const a0 = this.project(ex, wallH * 0.1, lerp(z0, z1, ta));
+        const a1 = this.project(ex, wallH * 0.85, lerp(z0, z1, ta));
+        const b0 = this.project(ex, wallH * 0.1, lerp(z0, z1, tb));
+        const b1 = this.project(ex, wallH * 0.85, lerp(z0, z1, tb));
+        const hash = Math.abs(Math.sin(i * 12.9898 + ex * 0.001)) % 1;
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = FAN_COLORS[Math.floor(hash * FAN_COLORS.length)];
+        fillQuad(ctx, a0, b0, b1, a1);
+      }
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -779,6 +819,7 @@ class Renderer {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.drawSky(ctx, match.walled, match.state === 'GOAL');
+    if (!match.walled) this.drawEndStands(ctx);
     this.drawGround(ctx, match.walled);
     if (!match.walled) this.drawPitchWear(ctx);
     this.drawFloodlightGlow(ctx);

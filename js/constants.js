@@ -70,6 +70,10 @@ const HALF_LENGTHS = {
   Long:   300,
 };
 
+// A mix of individual supporter colors (clothing, scarves, flags) so the crowd reads as many
+// different fans rather than one uniform texture.
+const FAN_COLORS = ['#d0483f', '#4a72c9', '#e0b23c', '#3fae7a', '#9a4fc9', '#e8e8e8', '#e0803c', '#3c3c3c', '#4fb8c9', '#c94f8a'];
+
 // Fictional pitchside sponsor boards (Stadium mode only) — original made-up brand names, not real
 // companies, same policy as the team kits.
 const AD_BOARDS = ['ATLAS BANK', 'NOVA AIR', 'ORBIT TELECOM', 'VERTEX SPORT', '2026 CUP', 'SOLAR ENERGY', 'PRIME COLA', 'GLOBAL FC'];

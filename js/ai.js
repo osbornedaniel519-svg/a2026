@@ -225,6 +225,17 @@ function updateOnePlayer(p, state, possessionTeam, pressRank, dt) {
 
   if (state.ball.owner === p) { updateCarrierAI(p, state, dt); return; }
 
+  // Nobody owns the ball — a stopped pass, a loose deflection, a ball rolling to a stop.
+  // The nearest player from each side must go and win it; without this, only whichever
+  // player happens to already be closest via formation drift would ever reach a dead ball.
+  if (!state.ball.owner) {
+    const closeEnough = pressRank === 1 && dist(p.x, p.y, state.ball.x, state.ball.y) < 300;
+    if (pressRank === 0 || closeEnough) {
+      steerTo(p, state.ball.x, state.ball.y, 4, true);
+      return;
+    }
+  }
+
   const defending = possessionTeam && possessionTeam !== p.team;
   // The second-nearest defender joins the press (a double-team) once the ball is in range and
   // the difficulty calls for tighter defending — sharper opponents don't let a carrier settle.

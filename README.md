@@ -56,8 +56,11 @@ automatically as play moves. Goalkeepers are always AI-controlled.
   gravity/bounce/friction simulation for the ball (height included, so shots can clear the bar)
 - `js/ai.js` — 4-3-3 formation shape that breathes with the ball, double-team pressing near goal
   on Normal/Hard, and a decision loop (shoot / pass / dribble / clear) for every AI-controlled
-  player, including a reactive diving goalkeeper. Difficulty scales CPU speed, reaction latency,
-  tackling, passing and shot accuracy — Hard is a genuinely tough, fast-reacting opponent
+  player, including a reactive diving goalkeeper. Whenever the ball is loose and unowned — a
+  stopped pass, a deflection, a dead ball nobody's claimed — the nearest player from each side
+  breaks off whatever they were doing to go and win it, rather than only reacting once someone
+  else already has it. Difficulty scales CPU speed, reaction latency, tackling, passing and shot
+  accuracy — Hard is a genuinely tough, fast-reacting opponent
 - `js/match.js` — the match state machine: kickoff, goals, halftime, full time, and human
   pass/shoot/tackle actions with light aim-assist. Throw-ins, corners and goal kicks are real set
   pieces, not instant hand-offs: a throw-in taker holds the ball overhead through the restart
@@ -73,10 +76,12 @@ automatically as play moves. Goalkeepers are always AI-controlled.
   gloves; they play a leg-swing kick animation whenever they strike the ball (including at
   corners and goal kicks), raise both arms overhead for a throw-in, and goalkeepers snap into a
   stretched, arm-reaching dive pose for saves. Stadium mode adds perimeter sponsor boards
-  (fictional brands), a tall three-tier stand packed with individual fans that ripple in a
-  traveling wave (and cheer harder on goals), floodlight glow, pitch wear patches, a fast ball
-  motion trail, and a vignette; plus an aspect-ratio-adaptive viewport (fills the screen on any
-  device with no letterboxing) and a 2D top-down minimap
+  (fictional brands), a tall three-tier stand packed with individually-colored fans — a real mix
+  of different supporters, not one uniform texture — that ripple in a traveling wave (and cheer
+  harder on goals), true 3D stand walls beyond both goals so the ground feels enclosed from more
+  than one side, floodlight glow, pitch wear patches, a fast ball motion trail, and a vignette;
+  plus an aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and
+  a 2D top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 
