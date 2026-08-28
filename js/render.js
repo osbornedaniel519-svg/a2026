@@ -410,6 +410,41 @@ class Renderer {
     }
   }
 
+  // A sparse row of true 3D-projected spectators standing just beyond the far touchline's ad
+  // boards — genuine 3D figures (unlike the cheap 2D screen-space crowd texture in the stand
+  // behind them), giving a close, tangible layer of fans right at pitch level.
+  drawPitchsideFans(ctx) {
+    const m = FIELD.margin;
+    const z = FIELD.width + m * 0.6;
+    const figH = 34;
+    const spacing = 66;
+    let idx = 0;
+    for (let x = spacing / 2; x < FIELD.length; x += spacing, idx++) {
+      const ground = this.project(x, 0, z);
+      if (!ground.visible) continue;
+      const top = this.project(x, figH, z);
+      const scale = ground.scale;
+      if (scale < 0.12) continue;
+      const h = ground.sy - top.sy;
+      const bodyW = Math.max(1.4, 6 * scale);
+      const hash = Math.abs(Math.sin(idx * 12.9898)) % 1;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(ground.sx, ground.sy, bodyW * 0.9, bodyW * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = FAN_COLORS[Math.floor(hash * FAN_COLORS.length)];
+      roundRectPath(ctx, ground.sx - bodyW / 2, top.sy + h * 0.32, bodyW, h * 0.68, bodyW * 0.3);
+      ctx.fill();
+
+      ctx.fillStyle = '#e3b590';
+      ctx.beginPath();
+      ctx.arc(ground.sx, top.sy + h * 0.16, bodyW * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   drawPitchWear(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.05)';
     const spots = [
@@ -826,7 +861,7 @@ class Renderer {
     this.drawLines(ctx, match.walled);
     this.drawGoal3D(ctx, 0);
     this.drawGoal3D(ctx, 1);
-    if (!match.walled) this.drawAdBoards(ctx);
+    if (!match.walled) { this.drawAdBoards(ctx); this.drawPitchsideFans(ctx); }
 
     if (match.ball.speed() > 260) {
       this.ballTrail.push({ x: match.ball.x, y: match.ball.y, z: match.ball.z });

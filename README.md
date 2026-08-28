@@ -43,8 +43,9 @@ Pick one under "Where to Play" in the menu:
 - `Q` — switch controlled player
 - `Esc` — pause
 
-**Touch** — an on-screen joystick plus PASS / THRU / SHOT (hold-and-release) / SPR buttons
-appear automatically on touch devices.
+**Touch** — an on-screen joystick plus a bottom-anchored action cluster appear automatically on
+touch devices: a big red **SHOT** (hold and release — longer hold = more power), **PASS**,
+**CROSS** (through ball / lob), **TACKLE**, and **SPR** (sprint, hold).
 
 You always control the outfield player on your team nearest the ball; control switches
 automatically as play moves. Goalkeepers are always AI-controlled.
@@ -79,9 +80,10 @@ automatically as play moves. Goalkeepers are always AI-controlled.
   (fictional brands), a tall three-tier stand packed with individually-colored fans — a real mix
   of different supporters, not one uniform texture — that ripple in a traveling wave (and cheer
   harder on goals), true 3D stand walls beyond both goals so the ground feels enclosed from more
-  than one side, floodlight glow, pitch wear patches, a fast ball motion trail, and a vignette;
-  plus an aspect-ratio-adaptive viewport (fills the screen on any device with no letterboxing) and
-  a 2D top-down minimap
+  than one side, a row of genuine 3D-projected spectators standing pitch-side along the far
+  touchline (a closer, more tangible layer than the 2D stand texture behind them), floodlight
+  glow, pitch wear patches, a fast ball motion trail, and a vignette; plus an aspect-ratio-adaptive
+  viewport (fills the screen on any device with no letterboxing) and a 2D top-down minimap
 - `js/input.js` — keyboard and touch (virtual joystick + buttons) input
 - `js/audio.js` — kicks, whistles, tackles, and crowd noise, all synthesized, no audio files
 

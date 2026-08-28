@@ -79,6 +79,7 @@ const Input = (() => {
     const joyStick = document.getElementById('joyStick');
     const btnPass = document.getElementById('btnPass');
     const btnThrough = document.getElementById('btnThrough');
+    const btnTackle = document.getElementById('btnTackle');
     const btnShoot = document.getElementById('btnShoot');
     const btnSprint = document.getElementById('btnSprint');
     if (!joyBase) return;
@@ -130,6 +131,7 @@ const Input = (() => {
     }
     bindTap(btnPass, 'pass');
     bindTap(btnThrough, 'through');
+    bindTap(btnTackle, 'tackle');
 
     if (btnShoot) {
       btnShoot.addEventListener('pointerdown', (e) => { e.preventDefault(); startShootCharge(); if (onAnyInput) onAnyInput(); });
